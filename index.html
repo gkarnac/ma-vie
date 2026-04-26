@@ -1353,7 +1353,7 @@ const RENFO_BASE = [
 ];
 
 const COOLDOWN = [
-  _E("Enfant étendu","Enfant étendu. Front au sol, bras tendus, relâche le dos.","Front au sol, bras tendus — relâche le dos",60,"Retour au calme"),
+  _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras au lieu des mains — protège l'épaule droite. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
   _E("Torsion allongée — gauche","Torsion allongée gauche. Genou basculé à droite, regarde à gauche.","Genou basculé à droite, bras en croix",30,"Retour au calme"),
   _E("Torsion allongée — droite","Torsion allongée droite.","Genou basculé à gauche, bras en croix",30,"Retour au calme"),
   _E("Étirement scalènes — gauche","Étirement des scalènes gauche. Oreille vers l'épaule, menton vers le plafond.","Oreille vers épaule, menton vers le plafond",30,"Retour au calme"),
@@ -1363,14 +1363,35 @@ const COOLDOWN = [
   {name:"Shavasana",speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:"Allongé, paumes vers le haut — relâche, respiration lente",duration:90,isRest:true,phase:"Retour au calme"}
 ];
 
+// Exercices coiffe des rotateurs — intégrés aux séances lundi et jeudi
+const COIFFE_BASE = [
+  _R(15),
+  _E("Rotation externe — gauche","Rotation externe, bras gauche. Coude à 90° collé au corps, bande élastique, tourne vers l'extérieur lentement.","Coude collé — rotation lente et contrôlée",45,"Coiffe"),
+  _R(10),
+  _E("Rotation externe — droite","Rotation externe, bras droit. Même mouvement — reste doux sur l'épaule droite.","Doux sur l'épaule droite — arrête si douleur > 3",45,"Coiffe"),
+  _R(15),
+  _E("Rotation interne — gauche","Rotation interne, bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps — mouvement contrôlé",45,"Coiffe"),
+  _R(10),
+  _E("Rotation interne — droite","Rotation interne, bras droit.","Doux — surveille la douleur",45,"Coiffe"),
+  _R(15),
+  _E("Élévation latérale — gauche","Élévation latérale gauche. Bras à 90°, pouce vers le bas — vider la canette. Monte lentement.","Pouce vers le bas, monte à 90° maximum",40,"Coiffe"),
+  _R(10),
+  _E("Élévation latérale — droite","Élévation latérale droite. Même mouvement côté droit.","Doux sur l'épaule droite — arrête à la douleur",40,"Coiffe"),
+  _R(15),
+  _E("Trapèzes en Y","Renforcement trapèzes en Y. Allongé sur le ventre, lève les bras en Y. Pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Coiffe"),
+  _R(10),
+  _E("Trapèzes en T","Renforcement trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Coiffe"),
+  _R(15)
+];
+
 // WEEKLY — programme hebdomadaire (repris exactement de WingChunTracker).
 // Index 0=Lundi ... 6=Dimanche.
 // { label, type, color, timer: [exercices du chrono], log: [exercices à logger avec séries×durée] }
 const WEEKLY = [
   { // Lundi
-    label:"Lundi", type:"Mobilité & Renforcement", color:"#1D9E75",
-    timer:[...PHYSIO_BASE, ...RENFO_BASE, ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"}]
+    label:"Lundi", type:"Mobilité & Renforcement + Coiffe", color:"#1D9E75",
+    timer:[...PHYSIO_BASE, ...RENFO_BASE, ...COIFFE_BASE, ...COOLDOWN],
+    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Rotation externe coiffe",s:1,d:"45s"},{n:"Élévation latérale coiffe",s:1,d:"40s"}]
   },
   { // Mardi
     label:"Mardi", type:"Mobilité & Cardio léger", color:"#BA7517",
@@ -1381,11 +1402,28 @@ const WEEKLY = [
   },
   { // Mercredi
     label:"Mercredi", type:"Récupération active", color:"#27AE60",
-    timer:[...PHYSIO_BASE, ...COOLDOWN],
-    log:[{n:"Mobilité thoracique",s:1,d:"15min"},{n:"Étirements cou",s:2,d:"30s"}]
+    timer:[...PHYSIO_BASE,
+      _E("Marche douce — 10 min","Marche douce pendant 10 minutes. Rythme très confortable, récupération active. Pas d'essoufflement.","Rythme très léger — récupération, pas d'effort",600,"Cardio"),
+      _R(20),
+      _E("Mobilité thoracique — rotation","Mobilité thoracique supplémentaire. Assis, mains derrière la tête, pivote lentement gauche et droite.","Mains derrière la tête — pivote lentement, amplitude maximale",60,"Mobilité"),
+      _R(15),
+      _E("Mobilité thoracique — extension","Extension thoracique. Assis sur une chaise, mains derrière la tête, ouvre la poitrine vers le haut.","Mains derrière la tête — ouvre la poitrine vers le plafond",45,"Mobilité"),
+      _R(15),
+      _E("Étirement pectoraux","Étirement des pectoraux. Bras en croix contre un cadre de porte, avance doucement.","Bras en croix, avance lentement — ouvre la poitrine",40,"Mobilité"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu — laisse le poids décoapter l'épaule. Petit cercle sans forcer.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
+      _R(15),
+      _E("Pendule de Codman — série 2","Pendule de Codman, deuxième série. Sens inverse.","Petit cercle dans l'autre sens",60,"Coiffe"),
+      _R(15),
+      _E("Rotation thoracique assis — série 3","Rotation thoracique, troisième série. Amplitude maximale.","Amplitude maximale — sens opposé",40,"Mobilité"),
+      _R(15),
+      _E("Étirement pectoraux — série 2","Étirement pectoraux, deuxième côté ou plus profond.","Ouvre encore plus la poitrine",40,"Mobilité"),
+      _R(15),
+      ...COOLDOWN],
+    log:[{n:"Mobilité thoracique",s:3,d:"60s"},{n:"Étirement pectoraux",s:2,d:"40s"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
   { // Jeudi
-    label:"Jeudi", type:"Renforcement", color:"#2980B9",
+    label:"Jeudi", type:"Renforcement + Coiffe", color:"#2980B9",
     timer:[...PHYSIO_BASE, ...RENFO_BASE,
       _E("Gainage latéral — gauche","Gainage latéral côté gauche.","Hanche décollée, corps aligné",20,"Renforcement"),
       _R(10),
@@ -1394,20 +1432,27 @@ const WEEKLY = [
       _E("Gainage latéral — gauche","Gainage latéral gauche, deuxième série.","2e série",20,"Renforcement"),
       _R(10),
       _E("Gainage latéral — droite","Gainage latéral droit, deuxième série.","2e série",20,"Renforcement"),
-      ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Chin tuck",s:2,d:"45s"}]
+      ...COIFFE_BASE, ...COOLDOWN],
+    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Rotation externe coiffe",s:1,d:"45s"},{n:"Élévation latérale coiffe",s:1,d:"40s"}]
   },
   { // Vendredi
     label:"Vendredi", type:"Mobilité & Renforcement", color:"#8E44AD",
-    timer:[...PHYSIO_BASE, ...RENFO_BASE, ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"}]
+    timer:[...PHYSIO_BASE, ...RENFO_BASE,
+      _E("Gainage latéral — gauche","Gainage latéral côté gauche.","Hanche décollée, corps aligné",20,"Renforcement"),
+      _R(10),
+      _E("Gainage latéral — droite","Gainage latéral côté droit.","Hanche décollée, corps aligné",20,"Renforcement"),
+      _R(10),
+      ...COOLDOWN],
+    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Gainage latéral",s:1,d:"20s"}]
   },
   { // Samedi
-    label:"Samedi", type:"Mobilité douce, Formes & Marche GPS", color:"#16A085",
+    label:"Samedi", type:"Mobilité & Marche GPS", color:"#16A085",
     timer:[...PHYSIO_BASE,
-      _E("Marche rapide GPS","Marche rapide en extérieur avec GPS — 20 minutes minimum. Active l'activité Marche sur ta Garmin avant de partir. Cette marche permet à la montre de recalculer ton VO₂ max.","Rythme soutenu — tu peux parler mais c'est un effort. GPS activé sur la Garmin.",1200,"Cardio"),
+      {name:"Prépare ta Garmin",speak:"Avant de démarrer la marche, active l'activité Marche ou Tapis roulant sur ta Garmin. Appuie sur Démarrer ici quand tu es prêt à partir.",detail:"Active Marche sur ta Garmin — attends le GPS si en extérieur",duration:60,isRest:true,phase:"Préparation"},
+      _E("Marche rapide — 20 min","Marche rapide pendant 20 minutes. Rythme soutenu — tu peux parler mais tu es essoufflé. Ta Garmin enregistre pour le VO₂ max.","Zone Z2 : 131-142 bpm — rythme soutenu mais confortable",1200,"Cardio"),
+      _E("Récupération marche","Ralentis progressivement. Marche tranquille 3 minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio"),
       ...COOLDOWN],
-    log:[{n:"Mobilité complète",s:1,d:"20min"},{n:"Formes Wing Chun",s:1,d:"15min"},{n:"Marche rapide GPS",s:1,d:"20min"}]
+    log:[{n:"Mobilité",s:1,d:"10min"},{n:"Marche rapide GPS",s:1,d:"20min"},{n:"Récupération",s:1,d:"3min"}]
   },
   { // Dimanche
     label:"Dimanche", type:"Repos — Récupération", color:"#888",
@@ -1426,39 +1471,8 @@ function effectiveWeekly() {
 function jsToDayIdx(jsDay) { return jsDay === 0 ? 6 : jsDay - 1; }
 
 // Résout un type ("Mobilité & Renforcement", etc.) en tableau d'exercices timer.
-// ── PROGRAMMES SPÉCIAUX ───────────────────────────────────────
-
-const COIFFE_PROGRAM = [
-  _E("Rotation externe debout — gauche","Rotation externe debout, bras gauche. Coude à 90°, bande élastique, tourne lentement vers l'extérieur.","Coude collé au corps, rotation lente et contrôlée",60,"Coiffe"),
-  _E("Rotation externe debout — droite","Rotation externe debout, bras droit. Même mouvement côté droit — attention à l'épaule.","Doux sur l'épaule droite — arrête si douleur > 3",60,"Coiffe"),
-  _E("Rotation interne debout — gauche","Rotation interne debout, bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps, mouvement contrôlé",60,"Coiffe"),
-  _E("Rotation interne debout — droite","Rotation interne debout, bras droit.","Doux — surveille la douleur",60,"Coiffe"),
-  _E("Élévation latérale — gauche","Élévation latérale gauche. Bras à 90°, pouce vers le bas (vider la canette). Lent.","Pouce vers le bas, monte à 90° maximum",45,"Coiffe"),
-  _E("Élévation latérale — droite","Élévation latérale droite. Même mouvement côté droit.","Doux sur l'épaule droite",45,"Coiffe"),
-  _E("Renforcement trapèzes — Y","Renforcement trapèzes en Y. Allongé sur le ventre, lève les bras en Y. Pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",45,"Coiffe"),
-  _E("Renforcement trapèzes — T","Renforcement trapèzes en T. Même position, bras en croix.","Bras en croix, lève lentement",45,"Coiffe"),
-  _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu — laisse le poids du bras décoapter l'épaule.","Penché, bras relâché — petit cercle sans forcer",60,"Coiffe"),
-  {name:"Pause — Eau",speak:"Prends une gorgée d'eau.",detail:"Hydratation",duration:30,isRest:true,phase:"Pause"},
-  _E("Rotation externe debout — gauche (série 2)","Deuxième série rotation externe gauche.",  "Même mouvement — fatigue normale",60,"Coiffe"),
-  _E("Rotation externe debout — droite (série 2)","Deuxième série rotation externe droite — reste doux.","Surveille la douleur épaule droite",60,"Coiffe"),
-  _E("Élévation frontale — gauche","Élévation frontale gauche. Bras tendu, lève à 90° devant toi.","Lent et contrôlé",45,"Coiffe"),
-  _E("Élévation frontale — droite","Élévation frontale droite.","Doux sur l'épaule droite",45,"Coiffe"),
-  {name:"Étirement capsule postérieure","speak":"Étirement capsule postérieure. Ramène ton bras droit vers ton épaule gauche avec l'autre bras. Tiens 30 secondes.",detail:"Bras croisé devant — pression douce avec l'autre main",duration:30,isRest:false,phase:"Étirement"},
-  {name:"Shavasana — Récupération","speak":"Séance coiffe terminée. Bien ! Allonge-toi, laisse tes épaules se relâcher.",detail:"Récupération complète",duration:60,isRest:true,phase:"Retour au calme"}
-];
-
-const MARCHE_PROGRAM = [
-  {name:"Préparation — Active ta Garmin",speak:"Avant de démarrer, active l'activité Marche ou Tapis roulant sur ta Garmin. Prends le temps de te préparer. Appuie sur Démarrer quand tu es prêt.",detail:"Active ta Garmin → Marche ou Tapis roulant → attends le signal GPS si en extérieur",duration:60,isRest:true,phase:"Préparation",manualStart:true},
-  {name:"Marche rapide — 20 minutes",speak:"C'est parti ! Marche rapide pendant 20 minutes. Rythme soutenu — tu peux parler mais c'est un effort. Ta Garmin enregistre les données pour le VO₂ max.",detail:"Rythme soutenu — parler possible mais essoufflé. Zone cardio Z2 : 131-142 bpm.",duration:1200,isRest:false,phase:"Cardio"},
-  {name:"Récupération — 3 minutes",speak:"Ralentis progressivement. Marche tranquille pour récupérer.",detail:"Marche lente — laisse la FC redescendre",duration:180,isRest:true,phase:"Récupération"},
-  {name:"Arrête ta Garmin",speak:"N'oublie pas d'arrêter et d'enregistrer ton activité sur ta Garmin !",detail:"Arrêter → Enregistrer sur la Garmin",duration:30,isRest:true,phase:"Fin"}
-];
-
-// Injecter dans WEEKLY comme séances disponibles via getWcProgram
-const SPECIAL_PROGRAMS = {
-  'Coiffe des rotateurs': COIFFE_PROGRAM,
-  'Marche rapide GPS': MARCHE_PROGRAM
-};
+// Programmes spéciaux — réservé pour usage futur
+const SPECIAL_PROGRAMS = {};
 
 function getWcProgram(type) {
   // Programmes spéciaux (coiffe, marche)
