@@ -711,6 +711,8 @@ textarea{resize:vertical;min-height:68px}
           <option value="Récupération active">Récupération active</option>
           <option value="Renforcement">Renforcement</option>
           <option value="Mobilité douce & Formes">Mobilité douce & Formes</option>
+          <option value="Coiffe des rotateurs">Coiffe des rotateurs</option>
+          <option value="Marche rapide GPS">Marche rapide GPS</option>
         </optgroup>
       </select>
     </div>
@@ -1424,7 +1426,44 @@ function effectiveWeekly() {
 function jsToDayIdx(jsDay) { return jsDay === 0 ? 6 : jsDay - 1; }
 
 // Résout un type ("Mobilité & Renforcement", etc.) en tableau d'exercices timer.
+// ── PROGRAMMES SPÉCIAUX ───────────────────────────────────────
+
+const COIFFE_PROGRAM = [
+  _E("Rotation externe debout — gauche","Rotation externe debout, bras gauche. Coude à 90°, bande élastique, tourne lentement vers l'extérieur.","Coude collé au corps, rotation lente et contrôlée",60,"Coiffe"),
+  _E("Rotation externe debout — droite","Rotation externe debout, bras droit. Même mouvement côté droit — attention à l'épaule.","Doux sur l'épaule droite — arrête si douleur > 3",60,"Coiffe"),
+  _E("Rotation interne debout — gauche","Rotation interne debout, bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps, mouvement contrôlé",60,"Coiffe"),
+  _E("Rotation interne debout — droite","Rotation interne debout, bras droit.","Doux — surveille la douleur",60,"Coiffe"),
+  _E("Élévation latérale — gauche","Élévation latérale gauche. Bras à 90°, pouce vers le bas (vider la canette). Lent.","Pouce vers le bas, monte à 90° maximum",45,"Coiffe"),
+  _E("Élévation latérale — droite","Élévation latérale droite. Même mouvement côté droit.","Doux sur l'épaule droite",45,"Coiffe"),
+  _E("Renforcement trapèzes — Y","Renforcement trapèzes en Y. Allongé sur le ventre, lève les bras en Y. Pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",45,"Coiffe"),
+  _E("Renforcement trapèzes — T","Renforcement trapèzes en T. Même position, bras en croix.","Bras en croix, lève lentement",45,"Coiffe"),
+  _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu — laisse le poids du bras décoapter l'épaule.","Penché, bras relâché — petit cercle sans forcer",60,"Coiffe"),
+  {name:"Pause — Eau",speak:"Prends une gorgée d'eau.",detail:"Hydratation",duration:30,isRest:true,phase:"Pause"},
+  _E("Rotation externe debout — gauche (série 2)","Deuxième série rotation externe gauche.",  "Même mouvement — fatigue normale",60,"Coiffe"),
+  _E("Rotation externe debout — droite (série 2)","Deuxième série rotation externe droite — reste doux.","Surveille la douleur épaule droite",60,"Coiffe"),
+  _E("Élévation frontale — gauche","Élévation frontale gauche. Bras tendu, lève à 90° devant toi.","Lent et contrôlé",45,"Coiffe"),
+  _E("Élévation frontale — droite","Élévation frontale droite.","Doux sur l'épaule droite",45,"Coiffe"),
+  {name:"Étirement capsule postérieure","speak":"Étirement capsule postérieure. Ramène ton bras droit vers ton épaule gauche avec l'autre bras. Tiens 30 secondes.",detail:"Bras croisé devant — pression douce avec l'autre main",duration:30,isRest:false,phase:"Étirement"},
+  {name:"Shavasana — Récupération","speak":"Séance coiffe terminée. Bien ! Allonge-toi, laisse tes épaules se relâcher.",detail:"Récupération complète",duration:60,isRest:true,phase:"Retour au calme"}
+];
+
+const MARCHE_PROGRAM = [
+  {name:"Préparation — Active ta Garmin",speak:"Avant de démarrer, active l'activité Marche ou Tapis roulant sur ta Garmin. Prends le temps de te préparer. Appuie sur Démarrer quand tu es prêt.",detail:"Active ta Garmin → Marche ou Tapis roulant → attends le signal GPS si en extérieur",duration:60,isRest:true,phase:"Préparation",manualStart:true},
+  {name:"Marche rapide — 20 minutes",speak:"C'est parti ! Marche rapide pendant 20 minutes. Rythme soutenu — tu peux parler mais c'est un effort. Ta Garmin enregistre les données pour le VO₂ max.",detail:"Rythme soutenu — parler possible mais essoufflé. Zone cardio Z2 : 131-142 bpm.",duration:1200,isRest:false,phase:"Cardio"},
+  {name:"Récupération — 3 minutes",speak:"Ralentis progressivement. Marche tranquille pour récupérer.",detail:"Marche lente — laisse la FC redescendre",duration:180,isRest:true,phase:"Récupération"},
+  {name:"Arrête ta Garmin",speak:"N'oublie pas d'arrêter et d'enregistrer ton activité sur ta Garmin !",detail:"Arrêter → Enregistrer sur la Garmin",duration:30,isRest:true,phase:"Fin"}
+];
+
+// Injecter dans WEEKLY comme séances disponibles via getWcProgram
+const SPECIAL_PROGRAMS = {
+  'Coiffe des rotateurs': COIFFE_PROGRAM,
+  'Marche rapide GPS': MARCHE_PROGRAM
+};
+
 function getWcProgram(type) {
+  // Programmes spéciaux (coiffe, marche)
+  if (SPECIAL_PROGRAMS[type]) return SPECIAL_PROGRAMS[type];
+  // Programmes WEEKLY
   const W = effectiveWeekly();
   const day = W.find(d => d.type === type);
   if (day) return day.timer;
