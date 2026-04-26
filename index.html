@@ -1401,9 +1401,11 @@ const WEEKLY = [
     log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"}]
   },
   { // Samedi
-    label:"Samedi", type:"Mobilité douce & Formes", color:"#16A085",
-    timer:[...PHYSIO_BASE, ...COOLDOWN],
-    log:[{n:"Mobilité complète",s:1,d:"20min"},{n:"Formes Wing Chun",s:1,d:"15min"}]
+    label:"Samedi", type:"Mobilité douce, Formes & Marche GPS", color:"#16A085",
+    timer:[...PHYSIO_BASE,
+      _E("Marche rapide GPS","Marche rapide en extérieur avec GPS — 20 minutes minimum. Active l'activité Marche sur ta Garmin avant de partir. Cette marche permet à la montre de recalculer ton VO₂ max.","Rythme soutenu — tu peux parler mais c'est un effort. GPS activé sur la Garmin.",1200,"Cardio"),
+      ...COOLDOWN],
+    log:[{n:"Mobilité complète",s:1,d:"20min"},{n:"Formes Wing Chun",s:1,d:"15min"},{n:"Marche rapide GPS",s:1,d:"20min"}]
   },
   { // Dimanche
     label:"Dimanche", type:"Repos — Récupération", color:"#888",
