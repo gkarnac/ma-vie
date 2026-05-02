@@ -842,6 +842,7 @@ const S = {
   seanceRunning: false,
   seanceInterval: null,
   seanceSpoken: false,
+  seanceTickBase: null,    // Date.now() au moment du dernier tick «officiel»
   seanceRpe: null,
   voiceEnabled: true, soundEnabled: true, selectedVoiceName: '',
   weeklyOverrides: null,  // si le Coach a patché WEEKLY via PLAN_JSON
@@ -867,6 +868,11 @@ async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       S.wakeLock = await navigator.wakeLock.request('screen');
+      // Le système peut libérer le lock automatiquement (ex: passage en BG)
+      // → on l'écoute pour le re-demander si la séance tourne encore
+      S.wakeLock.addEventListener('release', () => {
+        S.wakeLock = null;
+      });
     }
   } catch(e) {}
 }
@@ -876,10 +882,42 @@ async function releaseWakeLock() {
 }
 
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && S.wakeLock === null) {
-    await requestWakeLock();
+  if (document.visibilityState === 'visible') {
+    // Re-demander le WakeLock seulement si la séance tourne
+    if (S.seanceRunning && S.wakeLock === null) {
+      await requestWakeLock();
+    }
+    // Rattraper le retard accumulé en arrière-plan
+    stbCatchUp();
   }
 });
+
+// ── ÉCRAN ALLUMÉ (fallback iOS — WakeLock non supporté sur Safari) ────────
+// Joue un son silencieux en boucle toutes les 20s pour éviter la mise en veille
+let _noSleepAudio = null;
+function noSleepStart() {
+  if (!('wakeLock' in navigator) && !_noSleepAudio) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function loop() {
+        if (!S.seanceRunning) { _noSleepAudio = null; return; }
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.001; // quasi-silence
+        src.connect(gain); gain.connect(ctx.destination);
+        src.start();
+        src.onended = () => { if (S.seanceRunning) setTimeout(loop, 20000); else _noSleepAudio = null; };
+      }
+      _noSleepAudio = ctx;
+      loop();
+    } catch(e) {}
+  }
+}
+function noSleepStop() {
+  _noSleepAudio = null; // la boucle s'arrêtera d'elle-même à la prochaine itération
+}
 
 // ── AUDIO ──────────────────────────────────────────────────────
 let audioCtx = null;
@@ -2264,7 +2302,8 @@ function selectSeanceDay(idx) {
 }
 
 // ── TIMER (séance guidée) ─────────────────────────────────────
-function stbTick() {
+// stbTickOnce : applique exactement 1 seconde de décompte
+function stbTickOnce() {
   if (!S.seanceSpoken) {
     S.seanceSpoken = true;
     const ex = S.seanceExercises[S.seanceIdx];
@@ -2274,11 +2313,32 @@ function stbTick() {
   if (S.seanceVal <= 0) {
     playDoneBeep();
     stbNext();
-    return;
+    return false; // signale "exercice terminé, arrêter la boucle"
   }
   const cur = S.seanceExercises[S.seanceIdx];
   if (S.seanceVal <= 3 && cur && !cur.isRest) playCountdownBeep();
   stbRender();
+  return true; // continuer
+}
+
+// stbTick : appelé par setInterval — utilise Date.now() pour rattraper
+// les secondes manquées si l'intervalle a été ralenti par le navigateur
+function stbTick() {
+  if (!S.seanceRunning) return;
+  const now = Date.now();
+  const missed = Math.floor((now - S.seanceTickBase) / 1000);
+  S.seanceTickBase += missed * 1000; // avance la base du nombre de secondes réelles
+  for (let i = 0; i < missed; i++) {
+    const ok = stbTickOnce();
+    if (!ok) return; // exercice fini, stbNext() a pris le relais
+  }
+}
+
+// stbCatchUp : appelé quand la page revient au premier plan
+// pour rattraper immédiatement le temps passé en arrière-plan
+function stbCatchUp() {
+  if (!S.seanceRunning || !S.seanceTickBase) return;
+  stbTick(); // applique toutes les secondes manquées d'un coup
 }
 
 function stbToggle() {
@@ -2287,11 +2347,15 @@ function stbToggle() {
   document.getElementById('stb-play').textContent = S.seanceRunning ? '⏸ PAUSE' : '▶ GO';
   if (S.seanceRunning) {
     requestWakeLock();
+    noSleepStart(); // fallback iOS
     S.seanceSpoken = false;
-    S.seanceInterval = setInterval(stbTick, 1000);
+    S.seanceTickBase = Date.now(); // horodatage de référence
+    S.seanceInterval = setInterval(stbTick, 500); // polling 2×/sec pour réactivité
   } else {
     clearInterval(S.seanceInterval);
+    S.seanceTickBase = null;
     releaseWakeLock();
+    noSleepStop();
     window.speechSynthesis.cancel();
   }
 }
@@ -2336,8 +2400,9 @@ function stbNext() {
     setTimeout(() => {
       S.seanceRunning = true;
       S.seanceSpoken = false;
+      S.seanceTickBase = Date.now();
       document.getElementById('stb-play').textContent = '⏸ PAUSE';
-      S.seanceInterval = setInterval(stbTick, 1000);
+      S.seanceInterval = setInterval(stbTick, 500); // pooling 2×/sec
     }, 500);
   } else {
     // Fin de séance
@@ -2348,6 +2413,7 @@ function stbNext() {
     document.getElementById('stb-play').textContent = '▶ GO';
     speak('Séance terminée. Bravo !');
     releaseWakeLock();
+    noSleepStop();
   }
 }
 
