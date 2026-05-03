@@ -730,8 +730,7 @@ textarea{resize:vertical;min-height:68px}
         <option value="timer">Timer (durée)</option>
         <option value="check">Case à cocher</option>
         <option value="quantite">Quantité</option>
-        <option value="wingchun">Séance Wing Chun (tracké séparément)</option>
-        <option value="artistique">Pratique artistique (trackée séparément)</option>
+        <option value="wingchun">Séance Wing Chun (trackée dans l'onglet Wing Chun)</option>
       </select>
     </div>
     <div class="fg"><label>Unité (si quantité)</label><input type="text" id="hab-unite" placeholder="ex. L, verres, pages"></div>
@@ -1878,8 +1877,8 @@ function onPlanHabChange() {
   document.getElementById('plan-wc-wrap').style.display = isWc ? 'block' : 'none';
 }
 
-// Types trackés dans leur propre onglet → exclus de la planification hebdomadaire
-const TYPES_EXCLUS_PLANIF = ['wingchun', 'artistique'];
+// Séances Wing Chun trackées dans leur propre onglet → exclues du dropdown de planification
+const TYPES_EXCLUS_PLANIF = ['wingchun'];
 
 function openPlanModal() {
   const sel = document.getElementById('plan-hab-sel');
