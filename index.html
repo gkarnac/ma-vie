@@ -725,12 +725,21 @@ textarea{resize:vertical;min-height:68px}
   <div class="modal">
     <div class="modal-title">Nouvelle habitude<button class="modal-close" onclick="closeModal('modal-hab')">×</button></div>
     <div class="fg"><label>Nom</label><input type="text" id="hab-nom" placeholder="ex. Lecture"></div>
-    <div class="fg"><label>Type</label>
+    <div class="fg"><label>Catégorie</label>
+      <select id="hab-categorie">
+        <option value="exercice">💪 Exercice</option>
+        <option value="wingchun">🥋 Wing Chun</option>
+        <option value="artistique">🎨 Artistique</option>
+        <option value="lecture">📖 Lecture</option>
+        <option value="developpement">💻 Développement</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="fg"><label>Mécanique</label>
       <select id="hab-type">
         <option value="timer">Timer (durée)</option>
         <option value="check">Case à cocher</option>
         <option value="quantite">Quantité</option>
-        <option value="wingchun">Séance Wing Chun (trackée dans l'onglet Wing Chun)</option>
       </select>
     </div>
     <div class="fg"><label>Unité (si quantité)</label><input type="text" id="hab-unite" placeholder="ex. L, verres, pages"></div>
@@ -1115,13 +1124,22 @@ function parseJournal(rows) {
 }
 
 function parseHabitudes(rows) {
-  return rows.filter(h => h.id).map(h => ({
-    id: String(h.id), nom: h.nom, type: h.type || 'timer', unite: h.unite || '',
-    objectif_defaut: parseFloat(h.objectif_defaut) || 0,
-    timer_minutes: parseInt(h.timer_minutes) || 25,
-    icon: h.icon || '', ordre: parseInt(h.ordre) || 99,
-    actif: h.actif !== false && h.actif !== 'false' && h.actif !== 'FALSE'
-  })).sort((a,b) => a.ordre - b.ordre);
+  return rows.filter(h => h.id).map(h => {
+    const type = h.type || 'timer';
+    // Migration : anciennes habitudes de type 'wingchun' → catégorie 'wingchun', mécanique 'timer'
+    const categorie = h.categorie || (type === 'wingchun' ? 'wingchun' : null);
+    const mecanique = (type === 'wingchun') ? 'timer' : type;
+    return {
+      id: String(h.id), nom: h.nom,
+      type: mecanique,           // mécanique : timer / check / quantite
+      categorie: categorie,      // catégorie : exercice / wingchun / artistique / lecture / developpement / autre
+      unite: h.unite || '',
+      objectif_defaut: parseFloat(h.objectif_defaut) || 0,
+      timer_minutes: parseInt(h.timer_minutes) || 25,
+      icon: h.icon || '', ordre: parseInt(h.ordre) || 99,
+      actif: h.actif !== false && h.actif !== 'false' && h.actif !== 'FALSE'
+    };
+  }).sort((a,b) => a.ordre - b.ordre);
 }
 
 function parsePlans(rows) {
@@ -1827,43 +1845,70 @@ function renderProgress() {
   document.getElementById('bar-sem').style.width = pS + '%';
 }
 
+// Les 3 piliers du pie chart et leurs couleurs fixes
+const PILIERS = [
+  { key: 'exercice', label: '💪 Exercice', color: '#4bc6ff' },   // accent cyan
+  { key: 'artistique', label: '🎨 Artistique', color: '#ff4bd8' }, // hit rose
+  { key: 'lecture', label: '📖 Lecture', color: '#f5a623' },      // amber
+];
+// Catégories qui tombent dans le pilier Exercice
+const CATS_EXERCICE = ['exercice', 'wingchun'];
+
+function getCatHab(habId) {
+  const h = S.habitudes.find(h => h.id === habId);
+  return h ? (h.categorie || null) : null;
+}
+
 function renderPie() {
   const wcDuree = s => parseFloat(s.duree) || parseFloat(s.duree_minutes) || 0;
   const plans = todayPlans();
-  const seances = todayWcSeances();
-  // Construire une liste unifiée : engagements + séances WC complétées
-  const items = [
-    ...plans.map((p, i) => ({
-      nom: p.habitude_nom,
-      fait: p.duree_reelle,
-      prev: p.duree_prevue,
-      color: HAB_COLORS[i % HAB_COLORS.length]
-    })),
-    ...seances.filter(s => s.statut === 'Complété').map((s, i) => ({
-      nom: s.type || 'Wing Chun',
-      fait: wcDuree(s),
-      prev: wcDuree(s), // réalisé = prévu pour une séance complétée
-      color: HAB_COLORS[(plans.length + i) % HAB_COLORS.length]
-    }))
-  ];
-  if (!items.length) { document.getElementById('pie-pct').textContent = '—'; return; }
-  const tF = items.reduce((a,x) => a + x.fait, 0);
-  const tP = items.reduce((a,x) => a + x.prev, 0);
+  const seances = todayWcSeances().filter(s => s.statut === 'Complété');
+
+  // Accumuler par pilier
+  const acc = { exercice: {prev:0, fait:0}, artistique: {prev:0, fait:0}, lecture: {prev:0, fait:0} };
+
+  // Engagements du jour
+  plans.forEach(p => {
+    const cat = getCatHab(p.habitude_id);
+    const pilier = CATS_EXERCICE.includes(cat) ? 'exercice' : (cat === 'artistique' ? 'artistique' : cat === 'lecture' ? 'lecture' : null);
+    if (!pilier) return;
+    acc[pilier].prev += p.duree_prevue;
+    acc[pilier].fait += p.duree_reelle;
+  });
+
+  // Séances guidées Wing Chun → Exercice
+  seances.forEach(s => {
+    const d = wcDuree(s);
+    acc.exercice.prev += d;
+    acc.exercice.fait += d;
+  });
+
+  const actifs = PILIERS.filter(p => acc[p.key].prev > 0 || acc[p.key].fait > 0);
+  if (!actifs.length) { document.getElementById('pie-pct').textContent = '—'; return; }
+
+  const tF = actifs.reduce((a,p) => a + acc[p.key].fait, 0);
+  const tP = actifs.reduce((a,p) => a + acc[p.key].prev, 0);
   const pct = tP > 0 ? Math.round(tF / tP * 100) : 0;
   document.getElementById('pie-pct').textContent = pct + '%';
-  const dF = items.map(x => Math.max(x.fait, 0.1));
-  const dR = items.map(x => Math.max(x.prev - x.fait, 0));
+
+  const dF = actifs.map(p => Math.max(acc[p.key].fait, 0.1));
+  const dR = actifs.map(p => Math.max(acc[p.key].prev - acc[p.key].fait, 0));
+
   if (S.charts.pie) S.charts.pie.destroy();
   S.charts.pie = new Chart(document.getElementById('pie-chart'), {
     type: 'doughnut',
     data: {
-      labels: [...items.map(x => x.nom + ' (fait)'), ...items.map(x => x.nom + ' (reste)')],
-      datasets: [{data: [...dF,...dR], backgroundColor: [...items.map(x=>x.color),...items.map(x=>x.color+'44')], borderWidth: 0}]
+      labels: [...actifs.map(p => p.label + ' (fait)'), ...actifs.map(p => p.label + ' (reste)')],
+      datasets: [{
+        data: [...dF, ...dR],
+        backgroundColor: [...actifs.map(p => p.color), ...actifs.map(p => p.color + '44')],
+        borderWidth: 0
+      }]
     },
     options: {responsive:false, cutout:'65%', plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+Math.round(ctx.raw)+' min'}}}}
   });
-  document.getElementById('pie-legend').innerHTML = items.map(x =>
-    `<div class="legend-item"><div class="legend-dot" style="background:${x.color}"></div>${x.nom}</div>`
+  document.getElementById('pie-legend').innerHTML = actifs.map(p =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${p.color}"></div>${p.label} — ${Math.round(acc[p.key].fait)}/${Math.round(acc[p.key].prev)} min</div>`
   ).join('');
 }
 
@@ -1871,18 +1916,14 @@ function renderPie() {
 function onPlanHabChange() {
   const sel = document.getElementById('plan-hab-sel');
   const opt = sel.selectedOptions[0];
-  const isWc = opt?.dataset.type === 'wingchun';
-  document.getElementById('plan-dur').value = isWc ? 45 : (opt?.dataset.timer || 25);
-  document.getElementById('plan-dur-wrap').style.display = isWc ? 'none' : 'block';
-  document.getElementById('plan-wc-wrap').style.display = isWc ? 'block' : 'none';
+  document.getElementById('plan-dur').value = opt?.dataset.timer || 25;
+  document.getElementById('plan-dur-wrap').style.display = 'block';
+  document.getElementById('plan-wc-wrap').style.display = 'none';
 }
-
-// Séances Wing Chun trackées dans leur propre onglet → exclues du dropdown de planification
-const TYPES_EXCLUS_PLANIF = ['wingchun'];
 
 function openPlanModal() {
   const sel = document.getElementById('plan-hab-sel');
-  const actives = S.habitudes.filter(h => h.actif && !TYPES_EXCLUS_PLANIF.includes(h.type));
+  const actives = S.habitudes.filter(h => h.actif);
   sel.innerHTML = actives.length
     ? actives.map(h => `<option value="${h.id}" data-timer="${h.timer_minutes}" data-type="${h.type}">${h.icon ? h.icon + ' ' : ''}${h.nom}</option>`).join('')
     : '<option value="">— Crée une habitude dans Paramètres</option>';
@@ -2202,19 +2243,42 @@ function renderAnalyse() {
 }
 
 // ── PARAMÈTRES ─────────────────────────────────────────────────
+const CAT_LABELS = {exercice:'💪 Exercice', wingchun:'🥋 Wing Chun', artistique:'🎨 Artistique', lecture:'📖 Lecture', developpement:'💻 Développement', autre:'Autre'};
+const CAT_OPTIONS = Object.entries(CAT_LABELS).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+
 function renderParamHab() {
   const c = document.getElementById('param-hab-list');
   if (!S.habitudes.length) { c.innerHTML = '<p class="empty" style="padding:1rem">Aucune habitude.</p>'; return; }
-  c.innerHTML = S.habitudes.map(h => `
-    <div class="card-sm" style="display:flex;align-items:center;gap:10px">
+  c.innerHTML = S.habitudes.map(h => {
+    const catLabel = h.categorie ? CAT_LABELS[h.categorie] || h.categorie : null;
+    const needsCat = !h.categorie;
+    return `
+    <div class="card-sm" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:20px">${h.icon || '⚡'}</span>
-      <div style="flex:1">
+      <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600">${h.nom}</div>
-        <div style="font-size:12px;color:var(--txt2)">${h.type} · ${h.timer_minutes} min</div>
+        <div style="font-size:12px;color:var(--txt2)">${h.type} · ${h.timer_minutes} min${catLabel ? ' · ' + catLabel : ''}</div>
+        ${needsCat ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--amber)">⚠ Catégorie ?</span>
+          <select style="font-size:11px;padding:3px 6px;flex:1" onchange="setCatHab('${h.id}', this.value)">
+            <option value="">— Choisir —</option>${CAT_OPTIONS}
+          </select>
+        </div>` : ''}
       </div>
       <button class="btn2 btn-sm" onclick="toggleActifHab('${h.id}')" style="font-size:11px;padding:5px 10px">${h.actif ? '✓ Actif' : 'Inactif'}</button>
       <button class="delbtn" onclick="deleteHabitude('${h.id}')">×</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function setCatHab(id, cat) {
+  if (!cat) return;
+  const h = S.habitudes.find(h => h.id === id);
+  if (!h) return;
+  h.categorie = cat;
+  saveCache();
+  renderParamHab();
+  toast('Catégorie mise à jour ✓');
 }
 
 function renderParamMed() {
@@ -2242,7 +2306,9 @@ async function saveHabitude() {
   if (!nom) { toast('Entre un nom.'); return; }
   const icon = document.getElementById('hab-icon').value.trim();
   const h = {
-    id: String(Date.now()), nom, type: document.getElementById('hab-type').value,
+    id: String(Date.now()), nom,
+    type: document.getElementById('hab-type').value,
+    categorie: document.getElementById('hab-categorie').value,
     unite: document.getElementById('hab-unite').value.trim(), objectif_defaut: 0,
     timer_minutes: parseInt(document.getElementById('hab-timer').value) || 25,
     icon: icon || '', ordre: S.habitudes.length + 1, actif: true
