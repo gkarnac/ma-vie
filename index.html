@@ -730,7 +730,8 @@ textarea{resize:vertical;min-height:68px}
         <option value="timer">Timer (durée)</option>
         <option value="check">Case à cocher</option>
         <option value="quantite">Quantité</option>
-        <option value="wingchun">Séance Wing Chun</option>
+        <option value="wingchun">Séance Wing Chun (tracké séparément)</option>
+        <option value="artistique">Pratique artistique (trackée séparément)</option>
       </select>
     </div>
     <div class="fg"><label>Unité (si quantité)</label><input type="text" id="hab-unite" placeholder="ex. L, verres, pages"></div>
@@ -1796,44 +1797,74 @@ async function deletePlan(planId) {
 
 // ── PROGRESS & PIE ─────────────────────────────────────────────
 function renderProgress() {
+  // Durée réelle d'une séance WC (utilise la vraie durée calculée, pas un fixe)
+  const wcDuree = s => parseFloat(s.duree) || parseFloat(s.duree_minutes) || 0;
+
+  // ── Aujourd'hui ──
   const tp = todayPlans();
   const twc = todayWcSeances();
-  const tPrev = tp.reduce((a,p) => a+p.duree_prevue, 0) + twc.length * 45;
-  const tFait = tp.reduce((a,p) => a+p.duree_reelle, 0) + twc.filter(s=>s.statut==='Complété').length * 45;
-  const pJ = tPrev > 0 ? Math.min(100, Math.round(tFait/tPrev*100)) : 0;
+  // Planifié : engagements prévus + durée totale des séances WC du jour (programmées)
+  const tPrev = tp.reduce((a,p) => a + p.duree_prevue, 0)
+              + twc.reduce((a,s) => a + wcDuree(s), 0);
+  // Réalisé : engagements complétés + séances WC complétées (vraie durée)
+  const tFait = tp.reduce((a,p) => a + p.duree_reelle, 0)
+              + twc.filter(s => s.statut === 'Complété').reduce((a,s) => a + wcDuree(s), 0);
+  const pJ = tPrev > 0 ? Math.min(100, Math.round(tFait / tPrev * 100)) : 0;
   document.getElementById('pct-jour').textContent = pJ + '%';
   document.getElementById('bar-jour').style.width = pJ + '%';
 
+  // ── Semaine ──
   const days = getWeekDays();
-  const wp = S.plans.filter(p => days.includes(p.date));
-  const wPrev = wp.reduce((a,p) => a+p.duree_prevue, 0);
-  const wFait = wp.reduce((a,p) => a+p.duree_reelle, 0);
-  const pS = wPrev > 0 ? Math.min(100, Math.round(wFait/wPrev*100)) : 0;
+  const wp  = S.plans.filter(p => days.includes(p.date));
+  const wwc = S.wcSeances.filter(s => s.date && days.includes(s.date.slice(0,10)));
+  // Planifié semaine : engagements + toutes séances WC (complétées comptent pour leur durée réelle)
+  const wPrev = wp.reduce((a,p) => a + p.duree_prevue, 0)
+              + wwc.reduce((a,s) => a + wcDuree(s), 0);
+  // Réalisé semaine : engagements faits + séances WC complétées
+  const wFait = wp.reduce((a,p) => a + p.duree_reelle, 0)
+              + wwc.filter(s => s.statut === 'Complété').reduce((a,s) => a + wcDuree(s), 0);
+  const pS = wPrev > 0 ? Math.min(100, Math.round(wFait / wPrev * 100)) : 0;
   document.getElementById('pct-sem').textContent = pS + '%';
   document.getElementById('bar-sem').style.width = pS + '%';
 }
 
 function renderPie() {
+  const wcDuree = s => parseFloat(s.duree) || parseFloat(s.duree_minutes) || 0;
   const plans = todayPlans();
-  if (!plans.length) { document.getElementById('pie-pct').textContent = '—'; return; }
-  const tF = plans.reduce((a,p) => a+p.duree_reelle, 0);
-  const tP = plans.reduce((a,p) => a+p.duree_prevue, 0);
-  const pct = tP > 0 ? Math.round(tF/tP*100) : 0;
+  const seances = todayWcSeances();
+  // Construire une liste unifiée : engagements + séances WC complétées
+  const items = [
+    ...plans.map((p, i) => ({
+      nom: p.habitude_nom,
+      fait: p.duree_reelle,
+      prev: p.duree_prevue,
+      color: HAB_COLORS[i % HAB_COLORS.length]
+    })),
+    ...seances.filter(s => s.statut === 'Complété').map((s, i) => ({
+      nom: s.type || 'Wing Chun',
+      fait: wcDuree(s),
+      prev: wcDuree(s), // réalisé = prévu pour une séance complétée
+      color: HAB_COLORS[(plans.length + i) % HAB_COLORS.length]
+    }))
+  ];
+  if (!items.length) { document.getElementById('pie-pct').textContent = '—'; return; }
+  const tF = items.reduce((a,x) => a + x.fait, 0);
+  const tP = items.reduce((a,x) => a + x.prev, 0);
+  const pct = tP > 0 ? Math.round(tF / tP * 100) : 0;
   document.getElementById('pie-pct').textContent = pct + '%';
-  const colors = plans.map((_,i) => HAB_COLORS[i % HAB_COLORS.length]);
-  const dF = plans.map(p => Math.max(p.duree_reelle, 0.1));
-  const dR = plans.map(p => Math.max(p.duree_prevue - p.duree_reelle, 0));
+  const dF = items.map(x => Math.max(x.fait, 0.1));
+  const dR = items.map(x => Math.max(x.prev - x.fait, 0));
   if (S.charts.pie) S.charts.pie.destroy();
   S.charts.pie = new Chart(document.getElementById('pie-chart'), {
     type: 'doughnut',
     data: {
-      labels: [...plans.map(p => p.habitude_nom + ' (fait)'), ...plans.map(p => p.habitude_nom + ' (reste)')],
-      datasets: [{data: [...dF,...dR], backgroundColor: [...colors,...colors.map(c=>c+'44')], borderWidth: 0}]
+      labels: [...items.map(x => x.nom + ' (fait)'), ...items.map(x => x.nom + ' (reste)')],
+      datasets: [{data: [...dF,...dR], backgroundColor: [...items.map(x=>x.color),...items.map(x=>x.color+'44')], borderWidth: 0}]
     },
     options: {responsive:false, cutout:'65%', plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+Math.round(ctx.raw)+' min'}}}}
   });
-  document.getElementById('pie-legend').innerHTML = plans.map((p,i) =>
-    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${p.habitude_nom}</div>`
+  document.getElementById('pie-legend').innerHTML = items.map(x =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${x.color}"></div>${x.nom}</div>`
   ).join('');
 }
 
@@ -1847,9 +1878,12 @@ function onPlanHabChange() {
   document.getElementById('plan-wc-wrap').style.display = isWc ? 'block' : 'none';
 }
 
+// Types trackés dans leur propre onglet → exclus de la planification hebdomadaire
+const TYPES_EXCLUS_PLANIF = ['wingchun', 'artistique'];
+
 function openPlanModal() {
   const sel = document.getElementById('plan-hab-sel');
-  const actives = S.habitudes.filter(h => h.actif);
+  const actives = S.habitudes.filter(h => h.actif && !TYPES_EXCLUS_PLANIF.includes(h.type));
   sel.innerHTML = actives.length
     ? actives.map(h => `<option value="${h.id}" data-timer="${h.timer_minutes}" data-type="${h.type}">${h.icon ? h.icon + ' ' : ''}${h.nom}</option>`).join('')
     : '<option value="">— Crée une habitude dans Paramètres</option>';
@@ -2781,18 +2815,18 @@ TON RÔLE :
 FORMAT DU PLAN (quand tu proposes ou finalises) :
 Inclure dans ta réponse un bloc JSON entre balises <PLAN> et </PLAN>. Le plan a DEUX parties :
 
-A) "engagements" : les rendez-vous de la semaine par jour (comme avant).
+A) "engagements" : les rendez-vous de la semaine par jour. IMPORTANT : n'inclure QUE les types suivants dans les engagements — entraînement physique (ex. Musculation, Cardio), Lecture, Développement. Ne jamais inclure Wing Chun, formes Wing Chun ou pratique artistique dans les engagements : ces activités sont trackées dans leurs propres onglets dédiés.
 B) "weekly" : les ajustements au programme-type d'entraînement par jour (timer + log). Pour chaque jour que tu veux modifier, fournis la liste COMPLÈTE des exercices (ne fais pas de diff). Pour les jours sans changement, utilise null.
 
 <PLAN>
 {
   "engagements": {
-    "lundi": [{"type": "Wing Chun — Sac", "duree": 30, "note": "Intensité réduite"}],
+    "lundi": [{"type": "Musculation", "duree": 30, "note": "Intensité réduite"}],
     "mardi": [],
     "mercredi": [{"type": "Lecture", "duree": 30, "note": "Max 30 min"}],
     "jeudi": [],
-    "vendredi": [{"type": "Musculation", "duree": 25}],
-    "samedi": [{"type": "Wing Chun — Sac", "duree": 35}],
+    "vendredi": [{"type": "Développement", "duree": 25}],
+    "samedi": [],
     "dimanche": [{"type": "Repos", "duree": 0}]
   },
   "weekly": {
@@ -3640,6 +3674,11 @@ async function acceptPlan() {
         h.nom.toLowerCase().includes(item.type.toLowerCase().split(' — ')[0].toLowerCase()) ||
         item.type.toLowerCase().includes(h.nom.toLowerCase())
       );
+      // Exclure les types trackés dans leur propre onglet (Wing Chun, pratique artistique)
+      if (hab && TYPES_EXCLUS_PLANIF.includes(hab.type)) continue;
+      // Exclure aussi par nom si le Coach génère "Wing Chun" ou "Pratique artistique" sans habitude correspondante
+      const nomLower = item.type.toLowerCase();
+      if (nomLower.includes('wing chun') || nomLower.includes('artistique') || nomLower.includes('forme')) continue;
       const plan = {
         id: String(Date.now() + Math.random()),
         date: dateStr,
