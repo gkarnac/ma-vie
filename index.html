@@ -811,7 +811,7 @@ textarea{resize:vertical;min-height:68px}
 <div id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxK8H8FNYwKj0uLPmfRIGdRqwNj1d31yItGC7MVI5-n0lN_6pdcnXMW34l-gMnijmDnxw/exec';
+const API = 'https://script.google.com/macros/s/AKfycbx49E1O2B0xSnjkFEh2TbCsn6rDSMFkiqoWRTWkRXWTMXL-Y_BmLOsrxjKHqb9KBrjeGg/exec';
 const CACHE_KEY = 'ma-vie-cache-v3';
 const HAB_COLORS = ['#185FA5','#1D9E75','#BA7517','#534AB7','#A32D2D','#0F6E56','#854F0B'];
 const PL = ['Aucune','Très légère','Légère','Légère-mod.','Modérée','Modérée','Mod.-forte','Forte','Forte','Très forte','Maximale'];
@@ -2271,14 +2271,15 @@ function renderParamHab() {
   }).join('');
 }
 
-function setCatHab(id, cat) {
+async function setCatHab(id, cat) {
   if (!cat) return;
   const h = S.habitudes.find(h => h.id === id);
   if (!h) return;
   h.categorie = cat;
   saveCache();
   renderParamHab();
-  toast('Catégorie mise à jour ✓');
+  try { await api({action:'updateHabitude', habitude: JSON.stringify(h)}); toast('Catégorie mise à jour ✓'); }
+  catch(e) { toast('Sauvegardé localement'); }
 }
 
 function renderParamMed() {
