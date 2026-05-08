@@ -1311,7 +1311,9 @@ function renderHabList(isPast) {
     const icon = hab.icon || (hab.type === 'wingchun' ? '🥋' : '⚡');
     const isDone = plan.complete;
     const t = S.timers[plan.id] || {};
-    const totalSec = t.totalSec !== undefined ? t.totalSec : (hab.timer_minutes || 25) * 60;
+    // Priorité : timer en cours > durée planifiée > timer_minutes de l'habitude > 25 min par défaut
+    const defaultMin = plan.duree_prevue > 0 ? plan.duree_prevue : (hab.timer_minutes || 25);
+    const totalSec = t.totalSec !== undefined ? t.totalSec : defaultMin * 60;
     const remaining = t.remaining !== undefined ? t.remaining : totalSec;
     const isRunning = !!t.running;
     const mm = String(Math.floor(remaining / 60)).padStart(2,'0');
