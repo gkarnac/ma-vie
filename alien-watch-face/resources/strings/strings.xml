@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<strings>
+  <string id="AppName">Alien Watch Face</string>
+  <string id="Alien">ALIEN</string>
+  <string id="Corp">WEYLAND-YUTANI CORP</string>
+  <string id="BodyBattery">BODY\nBATTERY</string>
+  <string id="Bpm">BPM</string>
+  <string id="Battery">BATTERY</string>
+  <string id="Date">DATE</string>
+</strings>

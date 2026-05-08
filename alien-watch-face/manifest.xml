@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="com.garmin.devices/ant.iq.manifest" version="3">
+  <iq:application entry="AlienWatchFaceApp" id="a3f1c2d4-e5b6-7890-abcd-ef1234567890" launchType="WatchFace" minApiLevel="4.0.0" name="@Strings.AppName" type="watchface" version="1.0.0">
+    <iq:products>
+      <iq:product id="venusq2m"/>
+      <iq:product id="venusq2"/>
+    </iq:products>
+    <iq:permissions>
+      <iq:uses-permission id="Sensor"/>
+      <iq:uses-permission id="Fitness"/>
+      <iq:uses-permission id="UserProfile"/>
+    </iq:permissions>
+    <iq:languages>
+      <iq:language>fre</iq:language>
+      <iq:language>eng</iq:language>
+    </iq:languages>
+  </iq:application>
+</iq:manifest>

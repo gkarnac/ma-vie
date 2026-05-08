@@ -1,0 +1,7 @@
+project.manifest = manifest.xml
+
+base.sourcePath = source
+base.resourcePath = resources
+
+venusq2.resourcePath = resources/devices/venusq2;$(base.resourcePath)
+venusq2m.resourcePath = resources/devices/venusq2;$(base.resourcePath)
