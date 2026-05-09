@@ -1918,7 +1918,8 @@ function renderPie() {
 function onPlanHabChange() {
   const sel = document.getElementById('plan-hab-sel');
   const opt = sel.selectedOptions[0];
-  document.getElementById('plan-dur').value = opt?.dataset.timer || 25;
+  const timerVal = parseInt(opt?.dataset.timer) || 0;
+  document.getElementById('plan-dur').value = timerVal > 0 ? timerVal : 25;
   document.getElementById('plan-dur-wrap').style.display = 'block';
   document.getElementById('plan-wc-wrap').style.display = 'none';
 }
@@ -2267,10 +2268,25 @@ function renderParamHab() {
           </select>
         </div>` : ''}
       </div>
+      <button class="btn2 btn-sm" onclick="editTimerHab('${h.id}')" style="font-size:11px;padding:5px 10px" title="Modifier le timer par défaut">⏱ ${h.timer_minutes||25}m</button>
       <button class="btn2 btn-sm" onclick="toggleActifHab('${h.id}')" style="font-size:11px;padding:5px 10px">${h.actif ? '✓ Actif' : 'Inactif'}</button>
       <button class="delbtn" onclick="deleteHabitude('${h.id}')">×</button>
     </div>`;
   }).join('');
+}
+
+async function editTimerHab(id) {
+  const h = S.habitudes.find(h => h.id === id);
+  if (!h) return;
+  const val = prompt(`Timer par défaut pour "${h.nom}" (minutes) :`, h.timer_minutes || 25);
+  if (val === null) return;
+  const mins = parseInt(val);
+  if (isNaN(mins) || mins < 1) { toast('Valeur invalide'); return; }
+  h.timer_minutes = mins;
+  saveCache();
+  renderParamHab();
+  try { await api({action:'updateHabitude', habitude: JSON.stringify(h)}); toast('Timer mis à jour ✓'); }
+  catch(e) { toast('Sauvegardé localement'); }
 }
 
 async function setCatHab(id, cat) {
