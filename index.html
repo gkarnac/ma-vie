@@ -1344,12 +1344,38 @@ function renderHabList(isPast) {
   const plans = todayPlans();
   const wcSeances = todayWcSeances();
 
-  if (!plans.length && !wcSeances.length) {
+  // Aperçu WEEKLY pour les jours futurs (ou aujourd'hui) sans séance créée
+  const isFuture = S.selectedDay >= S.todayStr;
+  const selDate = new Date(S.selectedDay + 'T12:00:00');
+  const dayIdx = jsToDayIdx(selDate.getDay());
+  const W = effectiveWeekly();
+  const weeklyDay = W[dayIdx];
+  const showWeeklyPreview = isFuture && !wcSeances.length && weeklyDay && weeklyDay.type !== 'Repos — Récupération';
+
+  if (!plans.length && !wcSeances.length && !showWeeklyPreview) {
     container.innerHTML = '<p class="empty">Rien de planifié.<br>Clique "+ Planifier" pour ajouter.</p>';
     return;
   }
 
   let html = '';
+
+  // Aperçu WEEKLY (lecture seule, jour futur sans séance créée)
+  if (showWeeklyPreview) {
+    const prog = weeklyDay.timer || [];
+    const totalMin = prog.reduce((acc, ex) => acc + (ex.duration ? Math.round(ex.duration / 60) : 0), 0);
+    html += `<div class="hab-card wc" style="opacity:0.8">
+      <div class="hab-row">
+        <div class="hab-icon" style="background:#534AB720">🏋️</div>
+        <div class="hab-info">
+          <div class="hab-name">${weeklyDay.type}</div>
+          <div class="hab-meta" style="color:var(--txt3)">Programme prévu · ${totalMin} min env.</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--txt2);line-height:1.8">
+        ${prog.slice(0,5).map(ex => `<span style="display:inline-block;margin-right:8px">· ${ex.name}${ex.sets > 1 ? ' ×'+ex.sets : ''}</span>`).join('')}${prog.length > 5 ? `<span style="color:var(--txt3)">+ ${prog.length - 5} autres</span>` : ''}
+      </div>
+    </div>`;
+  }
 
   // Séances Wing Chun depuis WC Tracker
   wcSeances.forEach(seance => {
