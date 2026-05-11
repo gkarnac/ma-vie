@@ -534,6 +534,8 @@ textarea{resize:vertical;min-height:68px}
   <div id="wc-forms-list"></div>
 
   <button class="btn2" style="margin-top:10px" onclick="saveWingChunPractice()">Sauvegarder les formes du jour ✓</button>
+  <div id="wc-debug" style="margin-top:8px;font-size:11px;color:var(--txt3);word-break:break-all;display:none"></div>
+  <button class="btn2" style="margin-top:6px;font-size:11px;border-color:var(--txt3);color:var(--txt3)" onclick="(function(){const el=document.getElementById('wc-debug');el.style.display='block';el.textContent='IDs: '+JSON.stringify(S.wcFormes.map(f=>f.id))+' | Checked: '+JSON.stringify(Object.keys(S.wcChecked));})()">🔍 Debug IDs</button>
 
   <p class="slabel" style="margin-top:20px">Fréquence — 28 derniers jours</p>
   <div class="card">
