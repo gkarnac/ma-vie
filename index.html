@@ -2923,7 +2923,7 @@ function renderWcFormes() {
 }
 
 function toggleWcForme(id, checked) {
-  S.wcChecked[id] = checked;
+  S.wcChecked[String(id)] = checked;
 }
 
 function changeWcPass(id, delta) {
@@ -2964,13 +2964,14 @@ async function saveNewForme() {
     if (res && res.id) {
       const f = S.wcFormes.find(x => x.id === newId);
       if (f) f.id = String(res.id);
+      renderWcFormes(); // re-sync DOM après mise à jour de l'ID
     }
   } catch(e) {}
   toast('Forme ajoutée ✓');
 }
 
 async function saveWingChunPractice() {
-  const checked = S.wcFormes.filter(f => S.wcChecked[f.id]);
+  const checked = S.wcFormes.filter(f => S.wcChecked[String(f.id)]);
   if (!checked.length) { toast('Coche au moins une forme !'); return; }
   const formes = checked.map(f => ({
     formeId: f.id,
