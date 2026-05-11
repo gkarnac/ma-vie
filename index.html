@@ -797,6 +797,10 @@ textarea{resize:vertical;min-height:68px}
         <span class="tg" data-g="ptloc" data-v="hanche">Hanche</span>
       </div>
     </div>
+    <div class="fg" style="margin:0">
+      <label>Intensité RPE (1–10)</label>
+      <input type="number" id="pt-rpe" placeholder="7" min="1" max="10">
+    </div>
     <div class="fg">
       <label>Note rapide (optionnel)</label>
       <input type="text" id="pt-note" placeholder="ex. légère tension dans le dos...">
@@ -867,7 +871,8 @@ const S = {
   coachMessages: [],
   coachPlan: null,
   coachAnalysing: false,
-  garminData: null        // données importées depuis le ZIP Garmin
+  garminData: null,       // données importées depuis le ZIP Garmin
+  exercices: []           // banque d'exercices chargée depuis Sheets
 };
 
 const pColor = v => PC[Math.min(10, Math.max(0, Math.round(v)))];
@@ -1044,6 +1049,7 @@ function saveCache() {
       journalEntries: S.journalEntries, habitudes: S.habitudes,
       plans: S.plans, sessions: S.sessions, wcSeances: S.wcSeances,
       wcFormes: S.wcFormes, wcPractices: S.wcPractices,
+      exercices: S.exercices,
       medsPreset: S.medsPreset,
       weeklyOverrides: S.weeklyOverrides,
       voiceEnabled: S.voiceEnabled, soundEnabled: S.soundEnabled, selectedVoiceName: S.selectedVoiceName,
@@ -1064,6 +1070,7 @@ function loadCache() {
     S.wcSeances = d.wcSeances || [];
     S.wcFormes = d.wcFormes || [];
     S.wcPractices = d.wcPractices || [];
+    S.exercices = d.exercices || [];
     if (d.medsPreset && d.medsPreset.length) S.medsPreset = d.medsPreset;
     if (d.weeklyOverrides) S.weeklyOverrides = d.weeklyOverrides;
     if (typeof d.voiceEnabled === 'boolean') S.voiceEnabled = d.voiceEnabled;
@@ -1085,8 +1092,14 @@ async function syncAll() {
     S.sessions = data.sessions || [];
     S.wcSeances = data.wcSeances || [];
     S.wcFormes = parseWcFormes(data.wcFormes || []);
+    S.exercices = parseExercices(data.exercices || []);
     saveCache();
     setSyncState('ok', 'Synchronisé ✓');
+    // Re-enrichir le timer si une séance est déjà sélectionnée
+    if (S.seanceDayIdx !== null && !S.seanceRunning) {
+      const w = effectiveWeekly()[S.seanceDayIdx];
+      if (w) S.seanceExercises = enrichTimerFromBanque(w.timer);
+    }
     renderAll();
   } catch(e) {
     setSyncState('error', 'Erreur réseau');
@@ -1101,6 +1114,57 @@ function parseWcFormes(rows) {
     nom: f.nom || '',
     categorie: f.categorie || 'Autre'
   }));
+}
+
+function parseExercices(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(e => e.id && e.nom).map(e => ({
+    id: String(e.id),
+    nom: String(e.nom || ''),
+    categorie: String(e.categorie || ''),
+    source: String(e.source || ''),
+    niveau: parseInt(e.niveau) || 1,
+    equipement: String(e.equipement || ''),
+    zone_corps: String(e.zone_corps || ''),
+    contre_indications: String(e.contre_indications || ''),
+    description_courte: String(e.description_courte || ''),
+    description_vocale: String(e.description_vocale || ''),
+    duree_defaut: e.duree_defaut !== '' ? e.duree_defaut : null,
+    series_defaut: e.series_defaut !== '' ? e.series_defaut : null,
+    reps_defaut: e.reps_defaut !== '' ? e.reps_defaut : null,
+    frequence: String(e.frequence || ''),
+    variantes: String(e.variantes || '')
+  }));
+}
+
+// Retrouve un exercice dans la banque par son nom (insensible à la casse, matching partiel)
+function findExercice(nom) {
+  if (!nom || !S.exercices.length) return null;
+  const n = nom.toLowerCase().trim();
+  return S.exercices.find(e => e.nom.toLowerCase().includes(n) || n.includes(e.nom.toLowerCase())) || null;
+}
+
+// Enrichit un tableau timer avec les description_vocale de la banque.
+// Fait une copie shallow — ne mute pas les tableaux PHYSIO_BASE, RENFO_BASE, etc.
+// Règle : on remplace speak seulement si la banque a une description_vocale non vide
+//         ET que le speak codé en dur est générique (= juste nom + point) ou absent.
+function enrichTimerFromBanque(timer) {
+  if (!timer || !S.exercices.length) return timer;
+  return timer.map(ex => {
+    if (ex.isRest || !ex.name) return ex; // pauses : on touche pas
+    const banque = findExercice(ex.name);
+    if (!banque || !banque.description_vocale) return ex;
+    // speak générique = nom + '.' ou vide — on le remplace
+    const isGeneric = !ex.speak || ex.speak.trim() === (ex.name + '.');
+    if (isGeneric) {
+      return Object.assign({}, ex, { speak: banque.description_vocale });
+    }
+    // speak déjà personnalisé — on garde, mais on ajoute la description comme detail si absent
+    if (!ex.detail && banque.description_courte) {
+      return Object.assign({}, ex, { detail: banque.description_courte });
+    }
+    return ex;
+  });
 }
 
 function setSyncState(s, txt) {
@@ -1442,9 +1506,106 @@ const COIFFE_BASE = [
   _R(15)
 ];
 
-// WEEKLY — programme hebdomadaire (repris exactement de WingChunTracker).
-// Index 0=Lundi ... 6=Dimanche.
-// { label, type, color, timer: [exercices du chrono], log: [exercices à logger avec séries×durée] }
+// ── OBJECTIF MACRO ────────────────────────────────────────────
+// Influence le tri des exercices dans buildSeance().
+// Modifiable par le Coach via PLAN_JSON : { "objectif_macro": "cardio" }
+const OBJECTIF_MACRO_DEFAUT = 'cardio'; // objectif actuel : VO2max
+
+// ── DAY_CONFIG — configuration par jour (remplace WEEKLY) ─────
+const DAY_CONFIG = [
+  { label:'Lundi',    color:'#1D9E75', type:'Renforcement + Coiffe',   focus:['renforcement','gainage','coiffe'], duree_min:45, niveau_max:3 },
+  { label:'Mardi',    color:'#BA7517', type:'Mobilité & Cardio',       focus:['cardio','mobilite'],               duree_min:40, niveau_max:2 },
+  { label:'Mercredi', color:'#27AE60', type:'Récupération active',     focus:['mobilite','coiffe'],               duree_min:45, niveau_max:2 },
+  { label:'Jeudi',    color:'#2980B9', type:'Renforcement + Coiffe',   focus:['renforcement','gainage','coiffe'], duree_min:45, niveau_max:3 },
+  { label:'Vendredi', color:'#8E44AD', type:'Renforcement',            focus:['renforcement','gainage'],          duree_min:40, niveau_max:3 },
+  { label:'Samedi',   color:'#16A085', type:'Cardio Z2 + Mobilité',   focus:['cardio','mobilite'],               duree_min:60, niveau_max:2 },
+  { label:'Dimanche', color:'#888',    type:'Repos — Récupération',    focus:[],                                  duree_min:15, niveau_max:1 }
+];
+
+// ── buildSeance(idx) ──────────────────────────────────────────
+// Génère { timer, log } depuis la banque S.exercices.
+// Fallback sur tableaux statiques si banque vide.
+function buildSeance(idx) {
+  const cfg = DAY_CONFIG[idx];
+  const objectif = (S.coachPlan && S.coachPlan.objectif_macro) || OBJECTIF_MACRO_DEFAUT;
+
+  if (!cfg.focus.length) return { timer:[...COOLDOWN], log:[{n:'Repos actif',s:1,d:''}] };
+  if (!S.exercices || !S.exercices.length) return buildSeanceFallback(idx);
+
+  const dureeFixe = PHYSIO_BASE.reduce((a,e) => a+(e.duration||0),0) +
+                    COOLDOWN.reduce((a,e) => a+(e.duration||0),0);
+  const dureeFocusCible = cfg.duree_min * 60 - dureeFixe;
+  const pauseSeries = 20;
+
+  const banqueFiltre = S.exercices.filter(e =>
+    cfg.focus.includes(e.categorie) &&
+    e.niveau <= cfg.niveau_max &&
+    e.categorie !== 'echauffement'
+  ).sort((a,b) => {
+    const aObj = a.categorie === objectif ? 0 : 1;
+    const bObj = b.categorie === objectif ? 0 : 1;
+    return aObj !== bObj ? aObj - bObj : a.niveau - b.niveau;
+  });
+
+  const sel = []; let dureeAccum = 0;
+  for (const ex of banqueFiltre) {
+    const dur = parseInt(ex.duree_defaut) || 40;
+    const ser = parseInt(ex.series_defaut) || 1;
+    const total = (dur + pauseSeries) * ser;
+    if (dureeAccum + total > dureeFocusCible && sel.length >= 4) break;
+    sel.push({ex, dur, ser}); dureeAccum += total;
+  }
+
+  const timerFocus = [];
+  for (const {ex, dur, ser} of sel) {
+    for (let s = 1; s <= ser; s++) {
+      timerFocus.push({
+        name: ex.nom + (ser > 1 ? ' — série ' + s : ''),
+        speak: ex.description_vocale || (ex.nom + '.'),
+        detail: ex.description_courte || '',
+        duration: dur,
+        phase: ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1)
+      });
+      if (s < ser) timerFocus.push(_R(pauseSeries));
+    }
+    timerFocus.push(_R(pauseSeries));
+  }
+
+  return {
+    timer: [...PHYSIO_BASE, ...timerFocus, ...COOLDOWN],
+    log: sel.map(({ex}) => ({
+      n: ex.nom,
+      s: ex.series_defaut || 1,
+      d: ex.duree_defaut ? ex.duree_defaut + 's' : (ex.reps_defaut ? ex.reps_defaut + ' reps' : '')
+    }))
+  };
+}
+
+// ── buildSeanceFallback() ─────────────────────────────────────
+function buildSeanceFallback(idx) {
+  const F = [
+    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COIFFE_BASE,...COOLDOWN],
+      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Pont fessier',s:3,d:'50s'},{n:'Dead bug',s:2,d:'50s'},{n:'Chin tuck',s:2,d:'45s'},{n:'Rotation externe coiffe',s:1,d:'45s'}] },
+    { timer:[...PHYSIO_BASE,_E('Marche active','Marche active 15 minutes. Zone 2, 129 à 141 bpm.','Z2 : 129-141 bpm',900,'Cardio'),...COOLDOWN],
+      log:[{n:'Marche / vélo léger',s:1,d:'15min'},{n:'Chin tuck',s:2,d:'45s'}] },
+    { timer:[...PHYSIO_BASE,...COOLDOWN],
+      log:[{n:'Mobilité thoracique',s:3,d:'60s'},{n:'Pendule Codman',s:2,d:'60s'}] },
+    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COIFFE_BASE,...COOLDOWN],
+      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Gainage latéral',s:2,d:'20s'},{n:'Rotation externe coiffe',s:1,d:'45s'}] },
+    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COOLDOWN],
+      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Pont fessier',s:3,d:'50s'}] },
+    { timer:[...PHYSIO_BASE,
+        {name:'Prépare ta Garmin',speak:'Active Marche sur ta Garmin.',detail:'Active Marche sur ta Garmin',duration:60,isRest:true,phase:'Préparation'},
+        _E('Marche rapide — 20 min','Marche rapide 20 minutes. Zone Z2, 129 à 141 bpm.','Z2 : 129-141 bpm',1200,'Cardio'),
+        _E('Récupération marche','Ralentis. Marche tranquille 3 minutes.','Laisse la FC redescendre',180,'Cardio'),
+        ...COOLDOWN],
+      log:[{n:'Mobilité',s:1,d:'10min'},{n:'Marche rapide GPS',s:1,d:'20min'}] },
+    { timer:[...COOLDOWN], log:[{n:'Repos actif',s:1,d:''}] }
+  ];
+  return F[idx] || F[0];
+}
+
+// WEEKLY conservé comme alias pour compatibilité (Coach PLAN_JSON)
 const WEEKLY = [
   { // Lundi
     label:"Lundi", type:"Mobilité & Renforcement + Coiffe", color:"#1D9E75",
@@ -1519,10 +1680,15 @@ const WEEKLY = [
   }
 ];
 
-// Charger la WEEKLY sauvegardée (si le Coach l'a modifiée via PLAN_JSON) — à initialiser au boot
-// On garde WEEKLY comme default ; si S.weeklyOverrides existe, on la patche.
+// ── effectiveWeekly() ─────────────────────────────────────────
+// Génère les 7 jours depuis DAY_CONFIG + banque.
+// weeklyOverrides (patch Coach) prend le dessus si présent.
 function effectiveWeekly() {
-  return (S.weeklyOverrides && S.weeklyOverrides.length === 7) ? S.weeklyOverrides : WEEKLY;
+  if (S.weeklyOverrides && S.weeklyOverrides.length === 7) return S.weeklyOverrides;
+  return DAY_CONFIG.map((cfg, idx) => {
+    const s = buildSeance(idx);
+    return { label:cfg.label, type:cfg.type, color:cfg.color, timer:s.timer, log:s.log };
+  });
 }
 
 // JS Date.getDay() → index WEEKLY (0=Lun..6=Dim)
@@ -1786,6 +1952,7 @@ function openPostTimerModal(plan) {
   document.querySelectorAll('.tg[data-g="ptloc"]').forEach(t => t.classList.remove('on'));
   document.getElementById('pt-ph').textContent = '— sélectionne un niveau';
   document.getElementById('pt-note').value = '';
+  document.getElementById('pt-rpe').value = '';
   document.getElementById('pt-subtitle').textContent = 'Après ' + (plan.duree_reelle || plan.duree_prevue || '') + ' min de ' + (plan.habitude_nom || '');
   openModal('modal-posttimer');
 }
@@ -2150,6 +2317,7 @@ async function delJournal(id) {
 // ── POST-TIMER ─────────────────────────────────────────────────
 function skipPostTimer() {
   S.postTimerPlan = null; S.postTimerPain = null;
+  document.getElementById('pt-rpe').value = '';
   closeModal('modal-posttimer');
 }
 
@@ -2166,7 +2334,7 @@ async function savePostTimer() {
     locations: locs, medications: [],
     exercises: hab ? [hab.nom] : (plan ? [plan.habitude_nom] : []),
     duration: plan ? (plan.duree_reelle || plan.duree_prevue) : null,
-    intensity: null, events: [],
+    intensity: parseInt(document.getElementById('pt-rpe').value) || null, events: [],
     notes: note || ('Post-session ' + (plan ? plan.habitude_nom : '')),
     source: 'post-timer'
   };
@@ -2398,7 +2566,7 @@ function selectSeanceDay(idx) {
   const dayNumEl = document.getElementById('seance-day-num');
   if (dayNumEl) dayNumEl.textContent = idx + 1;
   const w = effectiveWeekly()[idx];
-  S.seanceExercises = w.timer;
+  S.seanceExercises = enrichTimerFromBanque(w.timer);
   S.seanceIdx = 0;
   S.seanceVal = (w.timer[0] && w.timer[0].duration) || 60;
   S.seanceRunning = false;
@@ -2408,8 +2576,7 @@ function selectSeanceDay(idx) {
   const lbl = document.getElementById('seance-type-label');
   // Drapeau si le Coach a patché ce jour
   const isPatched = S.weeklyOverrides && S.weeklyOverrides.length === 7 &&
-    (JSON.stringify(S.weeklyOverrides[idx].timer) !== JSON.stringify(WEEKLY[idx].timer) ||
-     S.weeklyOverrides[idx].type !== WEEKLY[idx].type);
+    (S.weeklyOverrides[idx].type !== DAY_CONFIG[idx].type);
   lbl.innerHTML = (isPatched ? '<span style="color:var(--amber);margin-right:6px" title="Ajusté par le Coach">⚙️</span>' : '') + w.type;
   lbl.style.color = w.color;
   document.getElementById('stb-play').textContent = '▶ GO';
@@ -2630,16 +2797,27 @@ function refreshVoiceSoundButtons() {
 function renderExLog(log) {
   const card = document.getElementById('ex-log-card');
   if (!log || !log.length) { card.innerHTML = '<p class="empty" style="margin:0">Aucun exercice à logger ce jour.</p>'; return; }
-  card.innerHTML = log.map(ex => (
-    '<div class="ex-log-row">' +
-      '<div class="ex-log-name" title="' + ex.n + '">' + ex.n + '</div>' +
-      '<input class="ex-input" value="' + (ex.s||1) + '" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="S" onclick="this.select()">' +
-      '<span class="ex-unit">×</span>' +
-      '<input class="ex-input ex-input-wide" value="' + (ex.d||'') + '" type="text" placeholder="dur" onclick="this.select()">' +
-      '<input class="ex-input ex-input-wide" value="" type="text" placeholder="lbs" onclick="this.select()">' +
-      '<span class="pain-flag" onclick="togglePain(this)" title="Douleur notée">🚩</span>' +
-    '</div>'
-  )).join('');
+  card.innerHTML = log.map(ex => {
+    const banque = findExercice(ex.n);
+    const hasCI = banque && banque.contre_indications && banque.contre_indications.trim() !== '';
+    const tooltip = banque
+      ? (banque.description_courte || banque.nom) + (hasCI ? ' ⚠ ' + banque.contre_indications : '')
+      : ex.n;
+    const ciBadge = hasCI
+      ? '<span title="Contre-indication : ' + banque.contre_indications + '" style="font-size:12px;cursor:help;flex-shrink:0;opacity:0.7">⚠️</span>'
+      : '';
+    return (
+      '<div class="ex-log-row">' +
+        '<div class="ex-log-name" title="' + tooltip + '">' + ex.n + '</div>' +
+        ciBadge +
+        '<input class="ex-input" value="' + (ex.s||1) + '" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="S" onclick="this.select()">' +
+        '<span class="ex-unit">×</span>' +
+        '<input class="ex-input ex-input-wide" value="' + (ex.d||'') + '" type="text" placeholder="dur" onclick="this.select()">' +
+        '<input class="ex-input ex-input-wide" value="" type="text" placeholder="lbs" onclick="this.select()">' +
+        '<span class="pain-flag" onclick="togglePain(this)" title="Douleur notée">🚩</span>' +
+      '</div>'
+    );
+  }).join('');
 }
 
 function togglePain(el) { el.classList.toggle('active'); }
@@ -3781,10 +3959,10 @@ async function acceptPlan() {
   // ─── Appliquer les ajustements WEEKLY
   let weeklyChanged = 0;
   if (weekly) {
-    // Base : override existant OU WEEKLY par défaut
+    // Base : override existant OU génération dynamique depuis la banque
     const base = (S.weeklyOverrides && S.weeklyOverrides.length === 7)
       ? JSON.parse(JSON.stringify(S.weeklyOverrides))
-      : JSON.parse(JSON.stringify(WEEKLY));
+      : effectiveWeekly();
     for (let i = 0; i < 7; i++) {
       const patch = weekly[days[i]];
       if (!patch) continue;
@@ -3840,10 +4018,8 @@ function renderWeeklyStatus() {
     const changed = [];
     for (let i = 0; i < 7; i++) {
       const o = S.weeklyOverrides[i];
-      const d = WEEKLY[i];
-      if (JSON.stringify(o.timer) !== JSON.stringify(d.timer) ||
-          JSON.stringify(o.log) !== JSON.stringify(d.log) ||
-          o.type !== d.type) {
+      const d = DAY_CONFIG[i];
+      if (o.type !== d.type) {
         changed.push(days[i]);
       }
     }
