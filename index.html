@@ -1070,7 +1070,7 @@ function loadCache() {
     S.plans = d.plans || [];
     S.sessions = d.sessions || [];
     S.wcSeances = d.wcSeances || [];
-    S.wcFormes = d.wcFormes || [];
+    S.wcFormes = (d.wcFormes && d.wcFormes.length) ? d.wcFormes : [...DEFAULT_WC_FORMES];
     S.wcPractices = d.wcPractices || [];
     S.exercices = d.exercices || [];
     if (d.medsPreset && d.medsPreset.length) S.medsPreset = d.medsPreset;
@@ -1094,6 +1094,7 @@ async function syncAll() {
     S.sessions = data.sessions || [];
     S.wcSeances = data.wcSeances || [];
     S.wcFormes = parseWcFormes(data.wcFormes || []);
+    if (!S.wcFormes.length) S.wcFormes = [...DEFAULT_WC_FORMES];
     S.exercices = parseExercices(data.exercices || []);
     saveCache();
     setSyncState('ok', 'Synchronisé ✓');
@@ -2973,7 +2974,8 @@ async function saveNewForme() {
 }
 
 async function saveWingChunPractice() {
-  const checked = S.wcFormes.filter(f => S.wcChecked[String(f.id)]);
+  const formesSource = S.wcFormes.length ? S.wcFormes : DEFAULT_WC_FORMES;
+  const checked = formesSource.filter(f => S.wcChecked[String(f.id)]);
   if (!checked.length) { toast('Coche au moins une forme !'); return; }
   const formes = checked.map(f => ({
     formeId: f.id,
