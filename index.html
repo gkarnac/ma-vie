@@ -518,10 +518,6 @@ textarea{resize:vertical;min-height:68px}
   <p class="slabel">Log des exercices</p>
   <div class="card" id="ex-log-card"></div>
 
-  <!-- RPE -->
-  <p class="slabel">Effort perçu (RPE 1–10)</p>
-  <div class="rpe-grid" id="rpe-grid"></div>
-
   <button class="btn" style="margin-top:8px;margin-bottom:26px" onclick="saveSeanceComplete()">Terminer et sauvegarder ✓</button>
 
   <!-- ── FORMES WING CHUN (section secondaire) ── -->
@@ -534,8 +530,6 @@ textarea{resize:vertical;min-height:68px}
   <div id="wc-forms-list"></div>
 
   <button class="btn2" style="margin-top:10px" onclick="saveWingChunPractice()">Sauvegarder les formes du jour ✓</button>
-  <div id="wc-debug" style="margin-top:8px;font-size:11px;color:var(--txt3);word-break:break-all;display:none"></div>
-  <button class="btn2" style="margin-top:6px;font-size:11px;border-color:var(--txt3);color:var(--txt3)" onclick="(function(){const el=document.getElementById('wc-debug');el.style.display='block';el.textContent='IDs: '+JSON.stringify(S.wcFormes.map(f=>f.id))+' | Checked: '+JSON.stringify(Object.keys(S.wcChecked));})()">🔍 Debug IDs</button>
 
   <p class="slabel" style="margin-top:20px">Fréquence — 28 derniers jours</p>
   <div class="card">
@@ -800,8 +794,20 @@ textarea{resize:vertical;min-height:68px}
       </div>
     </div>
     <div class="fg" style="margin:0">
-      <label>Intensité RPE (1–10)</label>
-      <input type="number" id="pt-rpe" placeholder="7" min="1" max="10">
+      <label>Intensité effort perçu (RPE)</label>
+      <div class="pain-btns" id="pt-rpe-btns">
+        <button class="pb" data-rpe="1" type="button" onclick="selPtRpe(1,this)">1</button>
+        <button class="pb" data-rpe="2" type="button" onclick="selPtRpe(2,this)">2</button>
+        <button class="pb" data-rpe="3" type="button" onclick="selPtRpe(3,this)">3</button>
+        <button class="pb" data-rpe="4" type="button" onclick="selPtRpe(4,this)">4</button>
+        <button class="pb" data-rpe="5" type="button" onclick="selPtRpe(5,this)">5</button>
+        <button class="pb" data-rpe="6" type="button" onclick="selPtRpe(6,this)">6</button>
+        <button class="pb" data-rpe="7" type="button" onclick="selPtRpe(7,this)">7</button>
+        <button class="pb" data-rpe="8" type="button" onclick="selPtRpe(8,this)">8</button>
+        <button class="pb" data-rpe="9" type="button" onclick="selPtRpe(9,this)">9</button>
+        <button class="pb" data-rpe="10" type="button" onclick="selPtRpe(10,this)">10</button>
+      </div>
+      <div class="ph" id="pt-rpe-ph">— optionnel</div>
     </div>
     <div class="fg">
       <label>Note rapide (optionnel)</label>
@@ -868,7 +874,7 @@ const S = {
   todayStr: localDateStr(new Date()),
   selectedDay: localDateStr(new Date()),
   weekOffset: 0,
-  postTimerPlan: null, postTimerPain: null,
+  postTimerPlan: null, postTimerPain: null, postTimerRpe: null, postTimerSeanceId: null,
   wakeLock: null,
   coachMessages: [],
   coachPlan: null,
@@ -2034,7 +2040,7 @@ function openPostTimerModal(plan) {
   document.querySelectorAll('.tg[data-g="ptloc"]').forEach(t => t.classList.remove('on'));
   document.getElementById('pt-ph').textContent = '— sélectionne un niveau';
   document.getElementById('pt-note').value = '';
-  document.getElementById('pt-rpe').value = '';
+  S.postTimerRpe = null; document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on')); document.getElementById('pt-rpe-ph').textContent = '— optionnel';
   document.getElementById('pt-subtitle').textContent = 'Après ' + (plan.duree_reelle || plan.duree_prevue || '') + ' min de ' + (plan.habitude_nom || '');
   openModal('modal-posttimer');
 }
@@ -2397,9 +2403,17 @@ async function delJournal(id) {
 }
 
 // ── POST-TIMER ─────────────────────────────────────────────────
+function selPtRpe(val, btn) {
+  S.postTimerRpe = val;
+  document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const labels = ['','Très léger','Léger','Modéré','Modéré+','Difficile','Difficile+','Très difficile','Très difficile+','Maximal','Maximal absolu'];
+  document.getElementById('pt-rpe-ph').innerHTML = '<span style="font-weight:600">' + val + '/10 — ' + (labels[val]||'') + '</span>';
+}
+
 function skipPostTimer() {
   S.postTimerPlan = null; S.postTimerPain = null;
-  document.getElementById('pt-rpe').value = '';
+  S.postTimerRpe = null; document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on')); document.getElementById('pt-rpe-ph').textContent = '— optionnel';
   closeModal('modal-posttimer');
 }
 
@@ -2416,7 +2430,7 @@ async function savePostTimer() {
     locations: locs, medications: [],
     exercises: hab ? [hab.nom] : (plan ? [plan.habitude_nom] : []),
     duration: plan ? (plan.duree_reelle || plan.duree_prevue) : null,
-    intensity: parseInt(document.getElementById('pt-rpe').value) || null, events: [],
+    intensity: S.postTimerRpe || null, events: [],
     notes: note || ('Post-session ' + (plan ? plan.habitude_nom : '')),
     source: 'post-timer'
   };
@@ -2427,7 +2441,16 @@ async function savePostTimer() {
     if (!res.ok) throw new Error();
     S.journalEntries.push(entry);
     S.journalEntries.sort((a,b) => a.date.localeCompare(b.date));
-    saveCache(); toast('Douleur enregistrée ✓');
+    // Mettre à jour le RPE dans WcSeances si cette session vient du timer
+    if (S.postTimerSeanceId && S.postTimerRpe) {
+      const seance = S.wcSeances.find(s => s.id === S.postTimerSeanceId);
+      if (seance) {
+        seance.rpe = S.postTimerRpe;
+        try { api({action:'saveWcSeance', data: JSON.stringify({id: seance.id, rpe: seance.rpe})}); } catch(e) {}
+      }
+    }
+    S.postTimerSeanceId = null;
+    saveCache(); toast('Séance enregistrée ✓');
   } catch(e) { toast('Erreur réseau.'); }
   btn.disabled = false; btn.textContent = 'Enregistrer';
   skipPostTimer();
@@ -2907,6 +2930,7 @@ function togglePain(el) { el.classList.toggle('active'); }
 // ── RPE ───────────────────────────────────────────────────────
 function buildRpeGrid() {
   const grid = document.getElementById('rpe-grid');
+  if (!grid) return;
   grid.innerHTML = [1,2,3,4,5,6,7,8,9,10].map(n =>
     '<button class="rpe-btn' + (n===S.seanceRpe?' sel':'') + '" onclick="selRpe(' + n + ',this)">' + n + '</button>'
   ).join('');
@@ -2950,7 +2974,8 @@ async function saveSeanceComplete() {
   saveCache();
   try { await api({action:'saveWcSeance', data: JSON.stringify(seance)}); } catch(e) {}
   toast('Séance enregistrée ✓');
-  // Ouvrir le popup post-séance pour la douleur (source=post-timer)
+  // Ouvrir le popup post-séance (RPE sera capturé là)
+  S.postTimerSeanceId = seanceId;
   openPostTimerModal({habitude_nom: w.type, duree_prevue: totalMin});
 }
 
