@@ -531,19 +531,8 @@ textarea{resize:vertical;min-height:68px}
 
   <button class="btn2" style="margin-top:10px" onclick="saveWingChunPractice()">Sauvegarder les formes du jour ✓</button>
 
-  <p class="slabel" style="margin-top:20px">Fréquence — 28 derniers jours</p>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:12px;color:var(--txt2);font-weight:600" id="wc-freq-title">Toutes formes confondues</div>
-      <select id="wc-freq-select" onchange="renderWcFreq()" style="font-size:12px;padding:5px 8px;width:auto"></select>
-    </div>
-    <div class="wc-freq-grid" id="wc-freq-grid"></div>
-    <div class="wc-freq-labels" id="wc-freq-labels"></div>
-    <div style="display:flex;gap:12px;margin-top:10px">
-      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>Pratiqué</span>
-      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:2px;background:var(--bg3);border:1px solid var(--border);display:inline-block"></span>Non pratiqué</span>
-    </div>
-  </div>
+  <p class="slabel" style="margin-top:20px">Progression des formes</p>
+  <div class="card" id="wc-progression-card"></div>
 
   <p class="slabel" style="margin-top:20px">Statistiques — 4 dernières semaines</p>
   <div class="stats-row">
@@ -3132,43 +3121,66 @@ function buildWcFreqSelector() {
   sel.innerHTML = html;
 }
 
-function renderWcFreq() {
-  const grid = document.getElementById('wc-freq-grid');
-  const lbls = document.getElementById('wc-freq-labels');
-  const title = document.getElementById('wc-freq-title');
-  const sel = document.getElementById('wc-freq-select');
-  if (!grid) return;
-  const formeId = sel ? sel.value : '';
-  const forme = formeId ? S.wcFormes.find(f => f.id === formeId) : null;
-  title.textContent = forme ? forme.nom : 'Toutes formes confondues';
+function renderWcFreq() { renderWcProgression(); } // alias pour compatibilité
 
-  // Construire les 28 derniers jours
+function renderWcProgression() {
+  const card = document.getElementById('wc-progression-card');
+  if (!card) return;
+
+  const formes = S.wcFormes.length ? S.wcFormes : DEFAULT_WC_FORMES;
+  if (!formes.length) { card.innerHTML = '<p class="empty">Aucune forme enregistrée.</p>'; return; }
+
+  // Semaine active : lundi au dimanche courant
   const today = new Date(); today.setHours(12,0,0,0);
-  const days = [];
-  for (let i = 27; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(localDateStr(d));
-  }
-  // Pour chaque jour, a-t-on pratiqué cette forme (ou toute forme) ?
-  const practicedByDay = days.map(ds => {
-    const practices = S.wcPractices.filter(p => String(p.date).slice(0,10) === ds);
-    if (!formeId) return practices.some(p => p.formes && p.formes.length > 0) ? 1 : 0;
-    return practices.some(p => (p.formes||[]).some(f => f.formeId === formeId)) ? 1 : 0;
+  const monday = new Date(today);
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  monday.setDate(today.getDate() - dow);
+  const semDebut = localDateStr(monday);
+  const semFin   = localDateStr(today);
+
+  // Compter les pratiques de cette semaine par formeId
+  const pratiquesParForme = {};
+  S.wcPractices.forEach(p => {
+    const d = String(p.date).slice(0,10);
+    if (d >= semDebut && d <= semFin) {
+      (p.formes||[]).forEach(f => {
+        pratiquesParForme[String(f.formeId)] = (pratiquesParForme[String(f.formeId)] || 0) + (f.passages || 1);
+      });
+    }
   });
-  grid.innerHTML = practicedByDay.map(v =>
-    '<div class="wc-freq-cell" style="background:' + (v ? 'var(--green)' : 'var(--bg3)') + ';' +
-    (v ? '' : 'border:1px solid var(--border)') + '"></div>'
-  ).join('');
-  // Labels (L M M J V S D pour une semaine)
-  const dayLabels = ['L','M','M','J','V','S','D'];
-  const startDay = new Date(days[0] + 'T12:00:00').getDay();
-  const offset = (startDay + 6) % 7; // lundi=0
-  let labelHtml = '';
-  for (let i = 0; i < 7; i++) {
-    labelHtml += '<div class="wc-freq-lbl">' + dayLabels[(offset + i) % 7] + '</div>';
+
+  // Trouver la prochaine forme à pratiquer (première non pratiquée cette semaine, dans l'ordre)
+  const prochaine = formes.find(f => !pratiquesParForme[String(f.id)]);
+
+  let html = '';
+
+  // Bannière "prochaine forme"
+  if (prochaine) {
+    html += '<div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--rad);padding:12px 16px;margin-bottom:14px">' +
+      '<div style="font-size:10px;font-family:var(--mono);letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Prochaine forme</div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--accent)">' + prochaine.nom + '</div>' +
+      '<div style="font-size:11px;color:var(--txt2);margin-top:2px">' + (prochaine.categorie||'') + '</div>' +
+    '</div>';
+  } else {
+    html += '<div style="background:var(--bg2);border:1px solid var(--green);border-radius:var(--rad);padding:12px 16px;margin-bottom:14px;text-align:center">' +
+      '<div style="font-size:14px;font-weight:700;color:var(--green)">✓ Toutes les formes pratiquées cette semaine</div>' +
+    '</div>';
   }
-  lbls.innerHTML = labelHtml;
+
+  // Liste de toutes les formes avec statut
+  formes.forEach(f => {
+    const count = pratiquesParForme[String(f.id)] || 0;
+    const fait = count > 0;
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="width:20px;height:20px;border-radius:50%;background:' + (fait ? 'var(--green)' : 'var(--bg3)') + ';border:1px solid ' + (fait ? 'var(--green)' : 'var(--border2)') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        (fait ? '<svg viewBox="0 0 24 24" width="12" height="12"><polyline points="20 6 9 17 4 12" stroke="var(--bg)" stroke-width="3" fill="none"/></svg>' : '') +
+      '</div>' +
+      '<div style="flex:1;font-size:13px;font-weight:' + (fait ? '400' : '600') + ';color:' + (fait ? 'var(--txt2)' : 'var(--txt)') + '">' + f.nom + '</div>' +
+      (count > 0 ? '<div style="font-size:11px;font-family:var(--mono);color:var(--txt3)">' + count + 'x</div>' : '') +
+    '</div>';
+  });
+
+  card.innerHTML = html;
 }
 
 function renderWcStats() {
