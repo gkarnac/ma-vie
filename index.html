@@ -1567,32 +1567,49 @@ function _estPaireGD(nomA, nomB) {
 }
 
 // Construit un bloc timer depuis une liste d'exercices de la banque.
-// Gère : pauses G/D (5s), pauses entre séries (20s), pauses entre exercices (20s).
-function _buildTimerBloc(exList, phase) {
+// opts.noPause     : aucune pause entre exercices (échauffement fluide)
+// opts.pauseGD     : pause G/D en secondes (défaut 5)
+// opts.pauseEntre  : pause entre exercices différents (défaut 20)
+// opts.pauseSeries : pause entre séries du même exercice (défaut 20)
+function _buildTimerBloc(exList, phase, opts) {
+  opts = opts || {};
+  const noPause    = !!opts.noPause;
+  const pauseGD    = opts.pauseGD    !== undefined ? opts.pauseGD    : 5;
+  const pauseEntre = opts.pauseEntre !== undefined ? opts.pauseEntre : 20;
+  const pauseSer   = opts.pauseSeries !== undefined ? opts.pauseSeries : 20;
+
   const timer = [];
   for (let i = 0; i < exList.length; i++) {
     const ex = exList[i];
     const dur = parseInt(ex.duree_defaut) || 40;
-    const ser = parseInt(ex.series_defaut) || 1;
     const phaseLabel = phase || (ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1));
-    for (let s = 1; s <= ser; s++) {
-      timer.push({
-        name: ex.nom + (ser > 1 ? ' — série ' + s : ''),
-        speak: ex.description_vocale || (ex.nom + '.'),
-        detail: ex.description_courte || '',
-        duration: dur,
-        phase: phaseLabel
-      });
-      if (s < ser) {
-        // Pause entre séries du même exercice
-        const nextNom = ex.nom;
-        timer.push(_R(20));
+
+    // Exercices bilatéraux (G/D) : générer autant de passages que de séries, alternés G puis D
+    const estBilateral = _estPaireGD(ex.nom, (exList[i+1]||{}).nom);
+    const ser = parseInt(ex.series_defaut) || 1;
+
+    if (estBilateral) {
+      // Traiter la paire G/D ensemble : ser passages de chaque côté
+      const exD = exList[i + 1];
+      const durD = parseInt(exD.duree_defaut) || dur;
+      for (let s = 0; s < ser; s++) {
+        timer.push({ name: ex.nom + (ser > 1 ? ' — série ' + (s+1) : ''), speak: ex.description_vocale || (ex.nom + '.'), detail: ex.description_courte || '', duration: dur, phase: phaseLabel });
+        timer.push(_R(pauseGD));
+        timer.push({ name: exD.nom + (ser > 1 ? ' — série ' + (s+1) : ''), speak: exD.description_vocale || (exD.nom + '.'), detail: exD.description_courte || '', duration: durD, phase: phaseLabel });
+        if (s < ser - 1) timer.push(_R(pauseSer));
+      }
+      i++; // sauter le prochain (déjà traité)
+    } else {
+      for (let s = 1; s <= ser; s++) {
+        timer.push({ name: ex.nom + (ser > 1 ? ' — série ' + s : ''), speak: ex.description_vocale || (ex.nom + '.'), detail: ex.description_courte || '', duration: dur, phase: phaseLabel });
+        if (s < ser) timer.push(_R(pauseSer));
       }
     }
-    // Pause après l'exercice
-    if (i < exList.length - 1) {
+
+    // Pause après l'exercice (ou la paire)
+    if (!noPause && i < exList.length - 1) {
       const suivant = exList[i + 1];
-      const pauseDur = _estPaireGD(ex.nom, suivant.nom) ? 5 : 20;
+      const pauseDur = _estPaireGD(ex.nom, suivant.nom) ? pauseGD : pauseEntre;
       timer.push(_R(pauseDur));
     }
   }
@@ -1608,28 +1625,45 @@ function buildSeance(idx) {
 
   const banque = S.exercices;
 
-  // IDs échauffement WC (rotations Wing Chun — mouvements fluides, pas de répétition avec physio)
-  const IDS_ECHAUF_WC = ['ex-028','ex-029','ex-031','ex-032','ex-033','ex-034','ex-035','ex-036','ex-037','ex-038'];
-  // IDs mobilité physio (exercises du physiothérapeute — cat-cow, thread, cou, etc.)
+  // Échauffement WC — ordre fixe, sans Cercles de bras (ex-028) ni Genoux hauts (ex-031)
+  // Échauffement WC — ordre fixe : épaules → bras → avant-bras → poignets → hanches → flancs → tronc
+  // ex-028 (Cercles bras) et ex-031 (Genoux hauts) retirés — doublons / hors sujet
+  const ECHAUF_WC_ORDRE = ['ex-032','ex-033','ex-034','ex-035','ex-036','ex-038','ex-037'];
+
+  // IDs mobilité physio
   const IDS_MOBIL_PHYSIO = ['ex-039','ex-040','ex-041','ex-042','ex-043','ex-044','ex-045','ex-046'];
   // IDs cooldown
   const IDS_COOLDOWN = ['ex-061','ex-062','ex-063','ex-064','ex-065'];
 
   const trouve = ids => ids.map(id => banque.find(e => e.id === id)).filter(Boolean);
 
-  const echaufWC   = trouve(IDS_ECHAUF_WC);
+  const echaufWC    = trouve(ECHAUF_WC_ORDRE);
+  // Ajouter Rotation tronc avec coudes manuellement après ex-037
+  const rotTroncCoudes = {
+    id:'echauf-wc-coudes', nom:'Rotation du tronc — coudes', categorie:'echauffement',
+    description_courte:'Rotation du tronc en accentuant avec les coudes.',
+    description_vocale:'Rotation du tronc avec les coudes. Accentue chaque côté, coups de coude.',
+    duree_defaut:30, series_defaut:1
+  };
+  echaufWC.push(rotTroncCoudes);
+
   const mobilPhysio = trouve(IDS_MOBIL_PHYSIO);
-  const cooldownEx = trouve(IDS_COOLDOWN);
+  const cooldownEx  = trouve(IDS_COOLDOWN);
 
   // IDs déjà utilisés — à exclure du bloc focus
-  const idsUtilises = new Set([...IDS_ECHAUF_WC, ...IDS_MOBIL_PHYSIO, ...IDS_COOLDOWN]);
+  const idsUtilises = new Set([...ECHAUF_WC_ORDRE, ...IDS_MOBIL_PHYSIO, ...IDS_COOLDOWN, 'ex-028','ex-029','ex-031']);
 
-  // Durée fixe estimée
-  const dureeEchauf = echaufWC.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + echaufWC.length * 10;
-  const dureePhysio = mobilPhysio.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + mobilPhysio.length * 10;
-  const dureeCooldown = cooldownEx.reduce((a,e) => a + (parseInt(e.duree_defaut)||45), 0) + cooldownEx.length * 10;
-  const dureeFixe = dureeEchauf + dureePhysio + dureeCooldown;
-  const dureeFocusCible = cfg.duree_min * 60 - dureeFixe;
+  // Durée réelle échauffement WC (sans pauses — enchaîné)
+  const dureeEchauf   = echaufWC.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + 15; // +15s pause finale
+  // Durée mobilité physio (pauses 5s G/D, 10s entre exercices)
+  const dureePhysio   = mobilPhysio.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + mobilPhysio.length * 8;
+  // Durée cooldown
+  const dureeCooldown = cooldownEx.reduce((a,e) => a + (parseInt(e.duree_defaut)||45), 0) + cooldownEx.length * 8 + 90; // +shavasana
+  const dureeFixe     = dureeEchauf + dureePhysio + dureeCooldown;
+
+  // Cible focus : séances semaine 30-45 min → cible 38 min = 2280s
+  const cibleTotal    = Math.min(cfg.duree_min, 38) * 60;
+  const dureeFocusCible = Math.max(cibleTotal - dureeFixe, 300); // min 5 min de focus
 
   // Bloc focus : banque filtrée, sans doublons, triée par objectif puis niveau
   const banqueFiltre = banque.filter(e =>
@@ -1642,26 +1676,35 @@ function buildSeance(idx) {
     return aObj !== bObj ? aObj - bObj : a.niveau - b.niveau;
   });
 
-  const sel = []; let dureeAccum = 0;
-  for (const ex of banqueFiltre) {
+  // Sélection des exercices focus — les paires G/D comptent double en durée
+  const sel = []; let dureeAccum = 0; const idsSelectionnes = new Set();
+  for (let i = 0; i < banqueFiltre.length; i++) {
+    const ex = banqueFiltre[i];
+    if (idsSelectionnes.has(ex.id)) continue;
     const dur = parseInt(ex.duree_defaut) || 40;
     const ser = parseInt(ex.series_defaut) || 1;
-    const total = (dur + 20) * ser + 20;
-    if (dureeAccum + total > dureeFocusCible && sel.length >= 4) break;
-    sel.push(ex); dureeAccum += total;
+    // Détecter paire G/D
+    const suivant = banqueFiltre[i + 1];
+    const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
+    const nbPassages = estPaire ? 2 : 1;
+    const total = (dur * nbPassages + 10) * ser + 10;
+    if (dureeAccum + total > dureeFocusCible && sel.length >= 3) break;
+    sel.push(ex);
+    idsSelectionnes.add(ex.id);
+    if (estPaire) { sel.push(suivant); idsSelectionnes.add(suivant.id); i++; }
+    dureeAccum += total;
   }
 
   // Construction des blocs timer
-  const timerEchauf  = _buildTimerBloc(echaufWC, 'Échauffement');
-  const timerPhysio  = _buildTimerBloc(mobilPhysio, 'Mobilité');
-  const timerFocus   = _buildTimerBloc(sel);
-  const timerCooldown = _buildTimerBloc(cooldownEx, 'Retour au calme');
-  // Shavasana en fin
-  const shavasana = {name:'Shavasana',speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:'Allongé, paumes vers le haut — relâche, respiration lente',duration:90,isRest:true,phase:'Retour au calme'};
+  const timerEchauf   = _buildTimerBloc(echaufWC,   'Échauffement', {noPause: true});
+  const timerPhysio   = _buildTimerBloc(mobilPhysio,'Mobilité',     {pauseGD: 5, pauseEntre: 10, pauseSeries: 10});
+  const timerFocus    = _buildTimerBloc(sel,          null,          {pauseGD: 5, pauseEntre: 20, pauseSeries: 20});
+  const timerCooldown = _buildTimerBloc(cooldownEx,  'Retour au calme', {pauseGD: 5, pauseEntre: 10});
+  const shavasana     = {name:'Shavasana',speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:'Allongé, paumes vers le haut — relâche, respiration lente',duration:90,isRest:true,phase:'Retour au calme'};
 
   return {
-    timer: [...timerEchauf, _R(15), ...timerPhysio, _R(15), ...timerFocus, _R(15), ...timerCooldown, shavasana],
-    log: sel.map(ex => ({
+    timer: [...timerEchauf, _R(15), ...timerPhysio, _R(10), ...timerFocus, _R(10), ...timerCooldown, shavasana],
+    log: sel.filter((e,i,a) => a.findIndex(x=>x.id===e.id)===i).map(ex => ({
       n: ex.nom,
       s: ex.series_defaut || 1,
       d: ex.duree_defaut ? ex.duree_defaut + 's' : (ex.reps_defaut ? ex.reps_defaut + ' reps' : '')
