@@ -1572,7 +1572,7 @@ function _buildTimerBloc(exList, phase, opts) {
   for (let i = 0; i < exList.length; i++) {
     const ex = exList[i];
     const dur = parseInt(ex.duree_defaut) || 40;
-    const phaseLabel = phase || (ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1));
+    const phaseLabel = phase || (ex.categorie ? ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1) : 'Séance');
 
     // Exercices bilatéraux (G/D) : générer autant de passages que de séries, alternés G puis D
     const estBilateral = _estPaireGD(ex.nom, (exList[i+1]||{}).nom);
@@ -1599,7 +1599,7 @@ function _buildTimerBloc(exList, phase, opts) {
     // Pause après l'exercice (ou la paire)
     if (!noPause && i < exList.length - 1) {
       const suivant = exList[i + 1];
-      const pauseDur = _estPaireGD(ex.nom, suivant.nom) ? pauseGD : pauseEntre;
+      const pauseDur = _estPaireGD(ex.nom, suivant ? suivant.nom : null) ? pauseGD : pauseEntre;
       timer.push(_R(pauseDur));
     }
   }
