@@ -1551,6 +1551,7 @@ const DAY_CONFIG = [
 // Fallback sur tableaux statiques si banque vide.
 // Détecte si deux noms forment une paire G/D (même base, côtés opposés)
 function _estPaireGD(nomA, nomB) {
+  if (!nomA || !nomB) return false;
   const base = n => n.replace(/\s*[—–-]\s*(gauche|droite|g|d)$/i, '').trim();
   return base(nomA) === base(nomB) && nomA !== nomB;
 }
