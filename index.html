@@ -1551,7 +1551,7 @@ const DAY_CONFIG = [
 // Fallback sur tableaux statiques si banque vide.
 // Détecte si deux noms forment une paire G/D (même base, côtés opposés)
 function _estPaireGD(nomA, nomB) {
-  if (!nomA || !nomB) return false;
+  if (!nomA || !nomB || typeof nomA !== 'string' || typeof nomB !== 'string') return false;
   const base = n => n.replace(/\s*[—–-]\s*(gauche|droite|g|d)$/i, '').trim();
   return base(nomA) === base(nomB) && nomA !== nomB;
 }
@@ -1562,6 +1562,7 @@ function _estPaireGD(nomA, nomB) {
 // opts.pauseEntre  : pause entre exercices différents (défaut 20)
 // opts.pauseSeries : pause entre séries du même exercice (défaut 20)
 function _buildTimerBloc(exList, phase, opts) {
+  if (!exList || !exList.length) return [];
   opts = opts || {};
   const noPause    = !!opts.noPause;
   const pauseGD    = opts.pauseGD    !== undefined ? opts.pauseGD    : 5;
@@ -1569,37 +1570,38 @@ function _buildTimerBloc(exList, phase, opts) {
   const pauseSer   = opts.pauseSeries !== undefined ? opts.pauseSeries : 20;
 
   const timer = [];
-  for (let i = 0; i < exList.length; i++) {
+  let i = 0;
+  while (i < exList.length) {
     const ex = exList[i];
+    if (!ex || !ex.nom) { i++; continue; }
     const dur = parseInt(ex.duree_defaut) || 40;
-    const phaseLabel = phase || (ex.categorie ? ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1) : 'Séance');
-
-    // Exercices bilatéraux (G/D) : générer autant de passages que de séries, alternés G puis D
-    const estBilateral = _estPaireGD(ex.nom, (exList[i+1]||{}).nom);
     const ser = parseInt(ex.series_defaut) || 1;
+    const phaseLabel = phase || (ex.categorie ? ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1) : 'Séance');
+    const suivant = exList[i + 1] || null;
+    const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
 
-    if (estBilateral) {
-      // Traiter la paire G/D ensemble : ser passages de chaque côté
-      const exD = exList[i + 1];
-      const durD = parseInt(exD.duree_defaut) || dur;
+    if (estPaire) {
+      // Paire G/D — alterner G+D pour chaque série
+      const durD = parseInt(suivant.duree_defaut) || dur;
       for (let s = 0; s < ser; s++) {
-        timer.push({ name: ex.nom + (ser > 1 ? ' — série ' + (s+1) : ''), speak: ex.description_vocale || (ex.nom + '.'), detail: ex.description_courte || '', duration: dur, phase: phaseLabel });
+        timer.push({name: ex.nom + (ser > 1 ? ' — série '+(s+1) : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
         timer.push(_R(pauseGD));
-        timer.push({ name: exD.nom + (ser > 1 ? ' — série ' + (s+1) : ''), speak: exD.description_vocale || (exD.nom + '.'), detail: exD.description_courte || '', duration: durD, phase: phaseLabel });
+        timer.push({name: suivant.nom + (ser > 1 ? ' — série '+(s+1) : ''), speak: suivant.description_vocale || suivant.nom+'.', detail: suivant.description_courte||'', duration: durD, phase: phaseLabel});
         if (s < ser - 1) timer.push(_R(pauseSer));
       }
-      i++; // sauter le prochain (déjà traité)
+      i += 2; // sauter la paire
     } else {
       for (let s = 1; s <= ser; s++) {
-        timer.push({ name: ex.nom + (ser > 1 ? ' — série ' + s : ''), speak: ex.description_vocale || (ex.nom + '.'), detail: ex.description_courte || '', duration: dur, phase: phaseLabel });
+        timer.push({name: ex.nom + (ser > 1 ? ' — série '+s : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
         if (s < ser) timer.push(_R(pauseSer));
       }
+      i++;
     }
 
-    // Pause après l'exercice (ou la paire)
-    if (!noPause && i < exList.length - 1) {
-      const suivant = exList[i + 1];
-      const pauseDur = _estPaireGD(ex.nom, suivant ? suivant.nom : null) ? pauseGD : pauseEntre;
+    // Pause après l'exercice (ou la paire), sauf si noPause ou dernier
+    if (!noPause && i < exList.length) {
+      const prochainEx = exList[i] || null;
+      const pauseDur = prochainEx && _estPaireGD((estPaire ? suivant.nom : ex.nom), prochainEx.nom) ? pauseGD : pauseEntre;
       timer.push(_R(pauseDur));
     }
   }
