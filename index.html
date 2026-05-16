@@ -1131,7 +1131,8 @@ function parseExercices(rows) {
     series_defaut: e.series_defaut !== '' ? e.series_defaut : null,
     reps_defaut: e.reps_defaut !== '' ? e.reps_defaut : null,
     frequence: String(e.frequence || ''),
-    variantes: String(e.variantes || '')
+    variantes: String(e.variantes || ''),
+    bilateral: e.bilateral === true || String(e.bilateral).toLowerCase() === 'true'
   }));
 }
 
@@ -1581,7 +1582,7 @@ function _buildTimerBloc(exList, phase, opts) {
     const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
 
     if (estPaire) {
-      // Paire G/D — alterner G+D pour chaque série
+      // Paire G/D par nom — alterner G+D pour chaque série
       const durD = parseInt(suivant.duree_defaut) || dur;
       for (let s = 0; s < ser; s++) {
         timer.push({name: ex.nom + (ser > 1 ? ' — série '+(s+1) : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
@@ -1590,6 +1591,16 @@ function _buildTimerBloc(exList, phase, opts) {
         if (s < ser - 1) timer.push(_R(pauseSer));
       }
       i += 2; // sauter la paire
+    } else if (ex.bilateral) {
+      // Exercice bilatéral — gauche puis droite pour chaque série
+      for (let s = 0; s < ser; s++) {
+        const sufSer = ser > 1 ? ' — série '+(s+1) : '';
+        timer.push({name: ex.nom + sufSer + ' — gauche', speak: (ex.description_vocale || ex.nom) + ' Côté gauche.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
+        timer.push(_R(pauseGD));
+        timer.push({name: ex.nom + sufSer + ' — droite', speak: (ex.description_vocale || ex.nom) + ' Côté droit.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
+        if (s < ser - 1) timer.push(_R(pauseSer));
+      }
+      i++;
     } else {
       for (let s = 1; s <= ser; s++) {
         timer.push({name: ex.nom + (ser > 1 ? ' — série '+s : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
@@ -1675,10 +1686,10 @@ function buildSeance(idx) {
     if (idsSelectionnes.has(ex.id)) continue;
     const dur = parseInt(ex.duree_defaut) || 40;
     const ser = parseInt(ex.series_defaut) || 1;
-    // Détecter paire G/D
+    // Détecter paire G/D ou exercice bilatéral
     const suivant = banqueFiltre[i + 1];
     const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
-    const nbPassages = estPaire ? 2 : 1;
+    const nbPassages = (estPaire || ex.bilateral) ? 2 : 1;
     const total = (dur * nbPassages + 10) * ser + 10;
     if (dureeAccum + total > dureeFocusCible && sel.length >= 3) break;
     sel.push(ex);
