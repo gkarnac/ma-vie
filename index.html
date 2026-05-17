@@ -1066,7 +1066,7 @@ function loadCache() {
     S.sessions = d.sessions || [];
     S.wcSeances = d.wcSeances || [];
     S.wcFormes = (d.wcFormes && d.wcFormes.length) ? d.wcFormes : [...DEFAULT_WC_FORMES];
-    S.wcPractices = d.wcPractices || [];
+    S.wcPractices = parseWcPractices(d.wcPractices || []);
     S.exercices = d.exercices || [];
     if (d.medsPreset && d.medsPreset.length) S.medsPreset = d.medsPreset;
     if (d.weeklyOverrides) S.weeklyOverrides = d.weeklyOverrides;
@@ -4112,6 +4112,10 @@ async function acceptPlan() {
   if (!S.coachPlan) return;
   const btn = document.getElementById('coach-accept-btn');
   btn.disabled = true; btn.textContent = 'Création en cours...';
+  try { await _acceptPlanInner(btn); } catch(e) { console.error('acceptPlan error:', e); toast('Erreur : ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Accepter et planifier';
+}
+async function _acceptPlanInner(btn) {
 
   const days = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
   const engagements = S.coachPlan.engagements || S.coachPlan;
@@ -4178,7 +4182,6 @@ async function acceptPlan() {
 
   saveCache();
 
-  btn.disabled = false; btn.textContent = 'Accepter et planifier';
   document.getElementById('coach-plan-wrap').style.display = 'none';
 
   const summary = '✓ Parfait ! J\'ai créé ' + created + ' engagement(s) pour la semaine prochaine' +
