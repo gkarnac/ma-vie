@@ -1088,6 +1088,7 @@ async function syncAll() {
     S.plans = parsePlans(data.planification || []);
     S.sessions = data.sessions || [];
     S.wcSeances = data.wcSeances || [];
+    S.wcPractices = parseWcPractices(data.wcPractices || []);
     S.wcFormes = parseWcFormes(data.wcFormes || []);
     if (!S.wcFormes.length) S.wcFormes = [...DEFAULT_WC_FORMES];
     S.exercices = parseExercices(data.exercices || []);
@@ -1112,6 +1113,20 @@ function parseWcFormes(rows) {
     nom: f.nom || '',
     categorie: f.categorie || 'Autre'
   }));
+}
+
+function parseWcPractices(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(p => p.id).map(p => {
+    // formes peut être un tableau d'objets (cache local) ou une chaîne "Nom1|Nom2" (depuis Sheets)
+    let formes = p.formes;
+    if (typeof formes === 'string') {
+      formes = formes.split('|').filter(Boolean).map(nom => ({ formeId: null, nom: nom.trim(), passages: 1 }));
+    } else if (!Array.isArray(formes)) {
+      formes = [];
+    }
+    return { id: p.id, date: p.date, formes: formes, passes: p.passes, duree: p.duree, notes: p.notes };
+  });
 }
 
 function parseExercices(rows) {
@@ -3158,7 +3173,11 @@ function renderWcProgression() {
     const d = String(p.date).slice(0,10);
     if (d >= semDebut && d <= semFin) {
       (p.formes||[]).forEach(f => {
-        pratiquesParForme[String(f.formeId)] = (pratiquesParForme[String(f.formeId)] || 0) + (f.passages || 1);
+        // Identifier par formeId si disponible, sinon matcher par nom
+        const key = f.formeId
+          ? String(f.formeId)
+          : (formes.find(wf => wf.nom === f.nom) ? String(formes.find(wf => wf.nom === f.nom).id) : f.nom);
+        pratiquesParForme[key] = (pratiquesParForme[key] || 0) + (f.passages || 1);
       });
     }
   });
