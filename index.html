@@ -4108,6 +4108,9 @@ function rejectPlan() {
   renderCoachMessages(S.coachMessages);
 }
 
+// Types d'habitudes trackés dans leurs propres onglets — exclus des engagements du planificateur
+const TYPES_EXCLUS_PLANIF = ['wingchun', 'artistique'];
+
 async function acceptPlan() {
   if (!S.coachPlan) return;
   const btn = document.getElementById('coach-accept-btn');
