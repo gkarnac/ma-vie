@@ -1577,10 +1577,12 @@ function _estPaireGD(nomA, nomB) {
 // opts.pauseGD     : pause G/D en secondes (défaut 5)
 // opts.pauseEntre  : pause entre exercices différents (défaut 20)
 // opts.pauseSeries : pause entre séries du même exercice (défaut 20)
+// opts.noPauseLast : pas de pause après le dernier exercice
 function _buildTimerBloc(exList, phase, opts) {
   if (!exList || !exList.length) return [];
   opts = opts || {};
-  const noPause    = !!opts.noPause;
+  const noPause     = !!opts.noPause;
+  const noPauseLast = !!opts.noPauseLast;
   const pauseGD    = opts.pauseGD    !== undefined ? opts.pauseGD    : 5;
   const pauseEntre = opts.pauseEntre !== undefined ? opts.pauseEntre : 20;
   const pauseSer   = opts.pauseSeries !== undefined ? opts.pauseSeries : 20;
@@ -1624,11 +1626,14 @@ function _buildTimerBloc(exList, phase, opts) {
       i++;
     }
 
-    // Pause après l'exercice (ou la paire), sauf si noPause ou dernier
-    if (!noPause && i < exList.length) {
+    // Pause après l'exercice (ou la paire), sauf si noPause, dernier, ou noPauseLast sur le dernier
+    const isLast = i >= exList.length;
+    if (!noPause && !isLast) {
       const prochainEx = exList[i] || null;
       const pauseDur = prochainEx && _estPaireGD((estPaire ? suivant.nom : ex.nom), prochainEx.nom) ? pauseGD : pauseEntre;
       timer.push(_R(pauseDur));
+    } else if (!noPause && isLast && !noPauseLast) {
+      // pas de pause après le dernier — rien à faire
     }
   }
   return timer;
@@ -1651,7 +1656,7 @@ function buildSeance(idx) {
   // IDs mobilité physio
   const IDS_MOBIL_PHYSIO = ['ex-039','ex-040','ex-041','ex-042','ex-043','ex-044','ex-045','ex-046'];
   // IDs cooldown
-  const IDS_COOLDOWN = ['ex-061','ex-062','ex-063','ex-064','ex-065'];
+  const IDS_COOLDOWN = ['ex-061','ex-062','ex-063','ex-064'];
 
   const trouve = ids => ids.map(id => banque.find(e => e.id === id)).filter(Boolean);
 
@@ -1717,7 +1722,7 @@ function buildSeance(idx) {
   const timerEchauf   = _buildTimerBloc(echaufWC,   'Échauffement', {noPause: true});
   const timerPhysio   = _buildTimerBloc(mobilPhysio,'Mobilité',     {pauseGD: 5, pauseEntre: 10, pauseSeries: 10});
   const timerFocus    = _buildTimerBloc(sel,          null,          {pauseGD: 5, pauseEntre: 20, pauseSeries: 20});
-  const timerCooldown = _buildTimerBloc(cooldownEx,  'Retour au calme', {pauseGD: 5, pauseEntre: 10});
+  const timerCooldown = _buildTimerBloc(cooldownEx,  'Retour au calme', {pauseGD: 5, pauseEntre: 10, noPauseLast: true});
   const shavasana     = {name:'Shavasana',speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:'Allongé, paumes vers le haut — relâche, respiration lente',duration:90,isRest:true,phase:'Retour au calme'};
 
   return {
