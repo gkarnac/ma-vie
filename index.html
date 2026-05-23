@@ -833,7 +833,8 @@ const DEFAULT_WC_FORMES = [
   {id:'wc-4', nom:'Muk Yan Jong', categorie:'Mannequin de bois'},
   {id:'wc-5', nom:'Baat Jaam Do', categorie:'Armes'},
   {id:'wc-6', nom:'Luk Dim Boon Kwan', categorie:'Armes'},
-  {id:'wc-7', nom:'Chi Sao', categorie:'Avec sifu'}
+  {id:'wc-7', nom:'Chi Sao', categorie:'Avec sifu'},
+  {id:'wc-1779286082798', nom:'Wing Chun Tong', categorie:'Mains nues'}
 ];
 
 const S = {
@@ -1090,6 +1091,10 @@ async function syncAll() {
     S.wcSeances = data.wcSeances || [];
     S.wcPractices = parseWcPractices(data.wcPractices || []);
     S.wcFormes = parseWcFormes(data.wcFormes || []);
+    // Garantir que les formes par défaut existent toujours dans le Sheet.
+    // Toute forme par défaut absente est ré-injectée ET persistée côté backend
+    // pour éviter qu'elle ne disparaisse à un futur reset du cache local.
+    await ensureDefaultFormesPersisted();
     if (!S.wcFormes.length) S.wcFormes = [...DEFAULT_WC_FORMES];
     S.exercices = parseExercices(data.exercices || []);
     saveCache();
@@ -1113,6 +1118,23 @@ function parseWcFormes(rows) {
     nom: f.nom || '',
     categorie: f.categorie || 'Autre'
   }));
+}
+
+// S'assure que chaque forme par défaut est présente ET écrite dans le Sheet.
+// Corrige le bug où les formes de base n'étaient jamais persistées : si le
+// cache local était effacé, seules les formes réellement dans WcFormes
+// survivaient. On compare par nom (insensible à la casse) pour ne pas
+// dupliquer une forme déjà présente sous un id différent.
+async function ensureDefaultFormesPersisted() {
+  const existingNoms = new Set(S.wcFormes.map(f => (f.nom || '').toLowerCase()));
+  const manquantes = DEFAULT_WC_FORMES.filter(d => !existingNoms.has(d.nom.toLowerCase()));
+  if (!manquantes.length) return;
+  for (const f of manquantes) {
+    S.wcFormes.push({ id: f.id, nom: f.nom, categorie: f.categorie });
+    try {
+      await api({ action: 'addWcForme', data: JSON.stringify(f) });
+    } catch (e) { /* hors ligne : sera re-tenté au prochain sync */ }
+  }
 }
 
 function parseWcPractices(rows) {
@@ -4320,7 +4342,22 @@ if (loadCache()) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW enregistré ✓', reg.scope))
+      .then(reg => {
+        console.log('SW enregistré ✓', reg.scope);
+        // Vérifie tout de suite s'il existe une version plus récente du SW
+        reg.update();
+        // Quand une nouvelle version est installée alors qu'une ancienne
+        // tournait déjà, on recharge la page pour servir le code à jour.
+        reg.addEventListener('updatefound', () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+              location.reload();
+            }
+          });
+        });
+      })
       .catch(err => console.warn('SW erreur:', err));
   });
 }
