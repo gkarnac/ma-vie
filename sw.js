@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ma-vie-v11';
+const CACHE_NAME = 'ma-vie-v13';
 
 // Installation — mise en cache des ressources
 self.addEventListener('install', e => {
