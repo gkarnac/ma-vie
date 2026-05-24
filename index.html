@@ -1670,10 +1670,16 @@ function buildSeance(idx) {
 
   const banque = S.exercices;
 
-  // Échauffement WC — ordre fixe, sans Cercles de bras (ex-028) ni Genoux hauts (ex-031)
-  // Échauffement WC — ordre fixe : épaules → bras → avant-bras → poignets → hanches → flancs → tronc
-  // ex-028 (Cercles bras) et ex-031 (Genoux hauts) retirés — doublons / hors sujet
-  const ECHAUF_WC_ORDRE = ['ex-032','ex-033','ex-034','ex-035','ex-036','ex-038','ex-037'];
+  // Échauffement WC — ordre fixe complet (haut + bas du corps)
+  // Haut : épaules → bras → avant-bras → poignets → hanches → flancs → tronc
+  // Bas  : cavalier G → descente latérale G → low lunge G → cavalier D → descente latérale D → low lunge D
+  //        → balancement ischio → tenir pied G/D → orteils+cheville G/D → fesses talons → pince debout
+  // ex-028 (Cercles bras) et ex-031 (Genoux hauts) retirés — doublons
+  const ECHAUF_WC_ORDRE = [
+    'ex-032','ex-033','ex-034','ex-035','ex-036','ex-038','ex-037',
+    'ex-070','ex-071','ex-072','ex-073','ex-074','ex-075',
+    'ex-076','ex-077','ex-078','ex-079','ex-080','ex-081','ex-082'
+  ];
 
   // IDs mobilité physio
   const IDS_MOBIL_PHYSIO = ['ex-039','ex-040','ex-041','ex-042','ex-043','ex-044','ex-045','ex-046'];
@@ -1696,7 +1702,7 @@ function buildSeance(idx) {
   const cooldownEx  = trouve(IDS_COOLDOWN);
 
   // IDs déjà utilisés — à exclure du bloc focus
-  const idsUtilises = new Set([...ECHAUF_WC_ORDRE, ...IDS_MOBIL_PHYSIO, ...IDS_COOLDOWN, 'ex-028','ex-029','ex-031']);
+  const idsUtilises = new Set([...ECHAUF_WC_ORDRE, ...IDS_MOBIL_PHYSIO, ...IDS_COOLDOWN, 'ex-028','ex-029','ex-031','ex-065']);
 
   // Durée réelle échauffement WC (sans pauses — enchaîné)
   const dureeEchauf   = echaufWC.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + 15; // +15s pause finale
