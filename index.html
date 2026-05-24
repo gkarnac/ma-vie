@@ -1482,16 +1482,17 @@ function renderHabList(isPast) {
 const _E = (n,speak,detail,dur,phase) => ({name:n,speak:speak||(n+'.'),detail:detail||'',duration:dur,phase:phase||'Séance'});
 const _R = (dur) => ({name:'Pause',speak:'',detail:'',duration:dur||20,isRest:true,phase:'Pause'});
 
+// ── ÉCHAUFFEMENT COMPLET (haut + bas du corps) ────────────────
 const PHYSIO_BASE = [
   _E("Rotations épaules","Rotations des épaules. Avant puis arrière, grands cercles.","Avant puis arrière — grands cercles",30,"Échauffement"),
   _E("Grande rotation des bras","Grande rotation des bras. Arrière puis avant.","Arrière puis avant — amplitude maximale",30,"Échauffement"),
   _E("Rotation avant-bras","Rotation des avant-bras. Gauche puis droite, coude fixe.","Gauche puis droite — coude fixe",20,"Échauffement"),
   _E("Rotation des poignets","Rotation des poignets avant puis arrière.","Avant puis arrière en alterné",20,"Échauffement"),
   _E("Rotation des hanches","Rotation des hanches. Gauche puis droite.","Gauche puis droite — grands cercles",30,"Échauffement"),
+  _E("Étirer les flancs","Étirement des flancs. Bras levé, 20 secondes chaque côté.","Inclinaison latérale — 20s gauche, 20s droite",40,"Échauffement"),
   _E("Rotation du tronc","Rotation du tronc. Avant-bras balancent, bassin fixe.","Avant-bras balancent — bassin fixe",30,"Échauffement"),
   _E("Rotation tronc — coudes","Rotation avec les coudes. Accentue chaque côté.","Coups de coude accentués",30,"Échauffement"),
-  _E("Étirer les flancs","Étirement des flancs. Bras levé, gauche puis droite.","Inclinaison latérale — gauche puis droite",20,"Échauffement"),
-  _R(20),
+  _R(15),
   _E("Cat-cow lent","Chat-vache lent. Expire en arrondissant, inspire en creusant.","Expire en arrondissant, inspire en creusant",60,"Mobilité"),
   _R(15),
   _E("Thread the needle — gauche","Thread the needle côté gauche. Bras sous le corps, épaule vers le sol.","Bras glissé sous le corps, épaule vers le sol",30,"Mobilité"),
@@ -1501,12 +1502,27 @@ const PHYSIO_BASE = [
   _R(15),
   _E("Rotation thoracique assis","Rotation thoracique, deuxième série.","2e série",40,"Mobilité"),
   _R(15),
-  _E("Demi-cercle cervical — gauche","Demi-cercle cervical gauche. Menton vers poitrine, oreille vers l'épaule. Ne pas aller vers l'arrière.","Menton vers poitrine — glisse vers l'épaule gauche",20,"Mobilité"),
+  _E("Demi-cercle cervical — gauche","Demi-cercle cervical gauche. Menton vers poitrine, oreille vers l'épaule.","Menton vers poitrine — glisse vers l'épaule gauche",20,"Mobilité"),
   _E("Demi-cercle cervical — droite","Demi-cercle cervical droit.","Glisse vers l'épaule droite",20,"Mobilité"),
   _R(15),
   _E("Étirement cou — gauche","Étirement latéral du cou gauche. Oreille vers l'épaule, main sur la tempe.","Oreille vers épaule, main sur tempe",30,"Mobilité"),
   _E("Étirement cou — droite","Étirement latéral du cou droit.","Même chose à droite",30,"Mobilité"),
-  _R(20)
+  _R(15),
+  // Bas du corps
+  _E("Position cavalier gauche","Position cavalier gauche. Hanche ouverte, dos vertical. Descends progressivement.","Dos droit, hanche gauche ouverte",10,"Échauffement"),
+  _E("Descente latérale gauche","Descente sur jambe droite. Jambe gauche tendue sur le côté. Cinq secondes.","Jambe gauche tendue — étire l'aine",5,"Échauffement"),
+  _E("Low lunge gauche","Low lunge gauche. Pied gauche devant, genou à 90°, hanche vers le sol.","Genou à 90° — hanche vers le sol",5,"Échauffement"),
+  _E("Position cavalier droite","Position cavalier droit. Même enchaînement côté droit.","Dos droit, hanche droite ouverte",10,"Échauffement"),
+  _E("Descente latérale droite","Descente sur jambe gauche. Jambe droite tendue sur le côté. Cinq secondes.","Jambe droite tendue — étire l'aine",5,"Échauffement"),
+  _E("Low lunge droit","Low lunge droit. Pied droit devant, genou à 90°, hanche vers le sol.","Genou à 90° — hanche vers le sol",5,"Échauffement"),
+  _E("Balancement vers les pieds","Balancement vers les pieds. Corps souple, bras suivent. Cinq fois.","Corps souple — bras suivent",10,"Échauffement"),
+  _E("Tenir pied gauche","Tenir pied gauche. Jambe tendue, cinq secondes.","Jambe tendue — maintiens",5,"Échauffement"),
+  _E("Tenir pied droit","Tenir pied droit. Même chose à droite.","Même chose à droite",5,"Échauffement"),
+  _E("Agripper orteils et cheville gauche","Orteils gauche vers toi, cinq secondes. Puis cheville, cinq secondes.","Orteils puis cheville — jambe gauche",10,"Échauffement"),
+  _E("Agripper orteils et cheville droit","Même chose à droite. Orteils, cinq secondes. Cheville, cinq secondes.","Orteils puis cheville — jambe droite",10,"Échauffement"),
+  _E("Descente fesses vers talons","Descente fesses vers les talons. Dos droit, lentement. Cinq secondes.","Dos droit — talons au sol si possible",5,"Échauffement"),
+  _E("Pince debout","Pince debout. Jambes tendues, mains vers les pieds. Cinq secondes.","Jambes tendues — laisse la gravité travailler",5,"Échauffement"),
+  _R(15)
 ];
 
 const RENFO_BASE = [
@@ -1537,7 +1553,7 @@ const RENFO_BASE = [
 ];
 
 const COOLDOWN = [
-  _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras au lieu des mains — protège l'épaule droite. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
+  _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
   _E("Torsion allongée — gauche","Torsion allongée gauche. Genou basculé à droite, regarde à gauche.","Genou basculé à droite, bras en croix",30,"Retour au calme"),
   _E("Torsion allongée — droite","Torsion allongée droite.","Genou basculé à gauche, bras en croix",30,"Retour au calme"),
   _E("Étirement scalènes — gauche","Étirement des scalènes gauche. Oreille vers l'épaule, menton vers le plafond.","Oreille vers épaule, menton vers le plafond",30,"Retour au calme"),
@@ -1547,318 +1563,170 @@ const COOLDOWN = [
   {name:"Shavasana",speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:"Allongé, paumes vers le haut — relâche, respiration lente",duration:90,isRest:true,phase:"Retour au calme"}
 ];
 
-// Exercices coiffe des rotateurs — intégrés aux séances lundi et jeudi
+// Exercices coiffe des rotateurs
 const COIFFE_BASE = [
   _R(15),
-  _E("Rotation externe — gauche","Rotation externe, bras gauche. Coude à 90° collé au corps, bande élastique, tourne vers l'extérieur lentement.","Coude collé — rotation lente et contrôlée",45,"Coiffe"),
+  _E("Rotation externe — gauche","Rotation externe bras gauche. Coude à 90° collé au corps, tourne vers l'extérieur lentement.","Coude collé — rotation lente et contrôlée",45,"Coiffe"),
   _R(10),
-  _E("Rotation externe — droite","Rotation externe, bras droit. Même mouvement — reste doux sur l'épaule droite.","Doux sur l'épaule droite — arrête si douleur > 3",45,"Coiffe"),
+  _E("Rotation externe — droite","Rotation externe bras droit. Reste doux sur l'épaule droite.","Doux sur l'épaule droite — arrête si douleur > 3",45,"Coiffe"),
   _R(15),
-  _E("Rotation interne — gauche","Rotation interne, bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps — mouvement contrôlé",45,"Coiffe"),
+  _E("Rotation interne — gauche","Rotation interne bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps — mouvement contrôlé",45,"Coiffe"),
   _R(10),
-  _E("Rotation interne — droite","Rotation interne, bras droit.","Doux — surveille la douleur",45,"Coiffe"),
+  _E("Rotation interne — droite","Rotation interne bras droit.","Doux — surveille la douleur",45,"Coiffe"),
   _R(15),
-  _E("Élévation latérale — gauche","Élévation latérale gauche. Bras à 90°, pouce vers le bas — vider la canette. Monte lentement.","Pouce vers le bas, monte à 90° maximum",40,"Coiffe"),
+  _E("Élévation latérale — gauche","Élévation latérale gauche. Pouce vers le bas, monte à 90° max.","Pouce vers le bas, monte à 90° maximum",40,"Coiffe"),
   _R(10),
-  _E("Élévation latérale — droite","Élévation latérale droite. Même mouvement côté droit.","Doux sur l'épaule droite — arrête à la douleur",40,"Coiffe"),
+  _E("Élévation latérale — droite","Élévation latérale droite. Doux sur l'épaule droite.","Doux — arrête à la douleur",40,"Coiffe"),
   _R(15),
-  _E("Trapèzes en Y","Renforcement trapèzes en Y. Allongé sur le ventre, lève les bras en Y. Pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Coiffe"),
+  _E("Trapèzes en Y","Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Coiffe"),
   _R(10),
-  _E("Trapèzes en T","Renforcement trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Coiffe"),
+  _E("Trapèzes en T","Trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Coiffe"),
   _R(15)
 ];
 
-// ── OBJECTIF MACRO ────────────────────────────────────────────
-// Influence le tri des exercices dans buildSeance().
-// Modifiable par le Coach via PLAN_JSON : { "objectif_macro": "cardio" }
-const OBJECTIF_MACRO_DEFAUT = 'cardio'; // objectif actuel : VO2max
-
-// ── DAY_CONFIG — configuration par jour (remplace WEEKLY) ─────
-const DAY_CONFIG = [
-  { label:'Lundi',    color:'#1D9E75', type:'Renforcement + Coiffe',   focus:['renforcement','gainage','coiffe'], duree_min:45, niveau_max:3 },
-  { label:'Mardi',    color:'#BA7517', type:'Mobilité & Cardio',       focus:['cardio','mobilite'],               duree_min:40, niveau_max:2 },
-  { label:'Mercredi', color:'#27AE60', type:'Récupération active',     focus:['mobilite','coiffe'],               duree_min:45, niveau_max:2 },
-  { label:'Jeudi',    color:'#2980B9', type:'Renforcement + Coiffe',   focus:['renforcement','gainage','coiffe'], duree_min:45, niveau_max:3 },
-  { label:'Vendredi', color:'#8E44AD', type:'Renforcement',            focus:['renforcement','gainage'],          duree_min:40, niveau_max:3 },
-  { label:'Samedi',   color:'#16A085', type:'Cardio Z2 + Mobilité',   focus:['cardio','mobilite'],               duree_min:60, niveau_max:2 },
-  { label:'Dimanche', color:'#888',    type:'Repos — Récupération',    focus:[],                                  duree_min:15, niveau_max:1 }
-];
-
-// ── buildSeance(idx) ──────────────────────────────────────────
-// Génère { timer, log } depuis la banque S.exercices.
-// Fallback sur tableaux statiques si banque vide.
-// Détecte si deux noms forment une paire G/D (même base, côtés opposés)
-function _estPaireGD(nomA, nomB) {
-  if (!nomA || !nomB || typeof nomA !== 'string' || typeof nomB !== 'string') return false;
-  const base = n => n.replace(/\s*[—–-]\s*(gauche|droite|g|d)$/i, '').trim();
-  return base(nomA) === base(nomB) && nomA !== nomB;
-}
-
-// Construit un bloc timer depuis une liste d'exercices de la banque.
-// opts.noPause     : aucune pause entre exercices (échauffement fluide)
-// opts.pauseGD     : pause G/D en secondes (défaut 5)
-// opts.pauseEntre  : pause entre exercices différents (défaut 20)
-// opts.pauseSeries : pause entre séries du même exercice (défaut 20)
-// opts.noPauseLast : pas de pause après le dernier exercice
-function _buildTimerBloc(exList, phase, opts) {
-  if (!exList || !exList.length) return [];
-  opts = opts || {};
-  const noPause     = !!opts.noPause;
-  const noPauseLast = !!opts.noPauseLast;
-  const pauseGD    = opts.pauseGD    !== undefined ? opts.pauseGD    : 5;
-  const pauseEntre = opts.pauseEntre !== undefined ? opts.pauseEntre : 20;
-  const pauseSer   = opts.pauseSeries !== undefined ? opts.pauseSeries : 20;
-
-  const timer = [];
-  let i = 0;
-  while (i < exList.length) {
-    const ex = exList[i];
-    if (!ex || !ex.nom) { i++; continue; }
-    const dur = parseInt(ex.duree_defaut) || 40;
-    const ser = parseInt(ex.series_defaut) || 1;
-    const phaseLabel = phase || (ex.categorie ? ex.categorie.charAt(0).toUpperCase() + ex.categorie.slice(1) : 'Séance');
-    const suivant = exList[i + 1] || null;
-    const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
-
-    if (estPaire) {
-      // Paire G/D par nom — alterner G+D pour chaque série
-      const durD = parseInt(suivant.duree_defaut) || dur;
-      for (let s = 0; s < ser; s++) {
-        timer.push({name: ex.nom + (ser > 1 ? ' — série '+(s+1) : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
-        timer.push(_R(pauseGD));
-        timer.push({name: suivant.nom + (ser > 1 ? ' — série '+(s+1) : ''), speak: suivant.description_vocale || suivant.nom+'.', detail: suivant.description_courte||'', duration: durD, phase: phaseLabel});
-        if (s < ser - 1) timer.push(_R(pauseSer));
-      }
-      i += 2; // sauter la paire
-    } else if (ex.bilateral) {
-      // Exercice bilatéral — gauche puis droite pour chaque série
-      for (let s = 0; s < ser; s++) {
-        const sufSer = ser > 1 ? ' — série '+(s+1) : '';
-        timer.push({name: ex.nom + sufSer + ' — gauche', speak: (ex.description_vocale || ex.nom) + ' Côté gauche.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
-        timer.push(_R(pauseGD));
-        timer.push({name: ex.nom + sufSer + ' — droite', speak: (ex.description_vocale || ex.nom) + ' Côté droit.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
-        if (s < ser - 1) timer.push(_R(pauseSer));
-      }
-      i++;
-    } else {
-      for (let s = 1; s <= ser; s++) {
-        timer.push({name: ex.nom + (ser > 1 ? ' — série '+s : ''), speak: ex.description_vocale || ex.nom+'.', detail: ex.description_courte||'', duration: dur, phase: phaseLabel});
-        if (s < ser) timer.push(_R(pauseSer));
-      }
-      i++;
-    }
-
-    // Pause après l'exercice (ou la paire), sauf si noPause, dernier, ou noPauseLast sur le dernier
-    const isLast = i >= exList.length;
-    if (!noPause && !isLast) {
-      const prochainEx = exList[i] || null;
-      const pauseDur = prochainEx && _estPaireGD((estPaire ? suivant.nom : ex.nom), prochainEx.nom) ? pauseGD : pauseEntre;
-      timer.push(_R(pauseDur));
-    } else if (!noPause && isLast && !noPauseLast) {
-      // pas de pause après le dernier — rien à faire
-    }
-  }
-  return timer;
-}
-
-function buildSeance(idx) {
-  const cfg = DAY_CONFIG[idx];
-  const objectif = (S.coachPlan && S.coachPlan.objectif_macro) || OBJECTIF_MACRO_DEFAUT;
-
-  if (!cfg.focus.length) return { timer:[...COOLDOWN], log:[{n:'Repos actif',s:1,d:''}] };
-  if (!S.exercices || !S.exercices.length) return buildSeanceFallback(idx);
-
-  const banque = S.exercices;
-
-  // Échauffement WC — ordre fixe complet (haut + bas du corps)
-  // Haut : épaules → bras → avant-bras → poignets → hanches → flancs → tronc
-  // Bas  : cavalier G → descente latérale G → low lunge G → cavalier D → descente latérale D → low lunge D
-  //        → balancement ischio → tenir pied G/D → orteils+cheville G/D → fesses talons → pince debout
-  // ex-028 (Cercles bras) et ex-031 (Genoux hauts) retirés — doublons
-  const ECHAUF_WC_ORDRE = [
-    'ex-032','ex-033','ex-034','ex-035','ex-036','ex-038','ex-037',
-    'ex-070','ex-071','ex-072','ex-073','ex-074','ex-075',
-    'ex-076','ex-077','ex-078','ex-079','ex-080','ex-081','ex-082'
-  ];
-
-  // IDs mobilité physio
-  const IDS_MOBIL_PHYSIO = ['ex-039','ex-040','ex-041','ex-042','ex-043','ex-044','ex-045','ex-046'];
-  // IDs cooldown
-  const IDS_COOLDOWN = ['ex-061','ex-062','ex-063','ex-064'];
-
-  const trouve = ids => ids.map(id => banque.find(e => e.id === id)).filter(Boolean);
-
-  const echaufWC    = trouve(ECHAUF_WC_ORDRE);
-  // Ajouter Rotation tronc avec coudes manuellement après ex-037
-  const rotTroncCoudes = {
-    id:'echauf-wc-coudes', nom:'Rotation du tronc — coudes', categorie:'echauffement',
-    description_courte:'Rotation du tronc en accentuant avec les coudes.',
-    description_vocale:'Rotation du tronc avec les coudes. Accentue chaque côté, coups de coude.',
-    duree_defaut:30, series_defaut:1
-  };
-  echaufWC.push(rotTroncCoudes);
-
-  const mobilPhysio = trouve(IDS_MOBIL_PHYSIO);
-  const cooldownEx  = trouve(IDS_COOLDOWN);
-
-  // IDs déjà utilisés — à exclure du bloc focus
-  const idsUtilises = new Set([...ECHAUF_WC_ORDRE, ...IDS_MOBIL_PHYSIO, ...IDS_COOLDOWN, 'ex-028','ex-029','ex-031','ex-065']);
-
-  // Durée réelle échauffement WC (sans pauses — enchaîné)
-  const dureeEchauf   = echaufWC.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + 15; // +15s pause finale
-  // Durée mobilité physio (pauses 5s G/D, 10s entre exercices)
-  const dureePhysio   = mobilPhysio.reduce((a,e) => a + (parseInt(e.duree_defaut)||30), 0) + mobilPhysio.length * 8;
-  // Durée cooldown
-  const dureeCooldown = cooldownEx.reduce((a,e) => a + (parseInt(e.duree_defaut)||45), 0) + cooldownEx.length * 8 + 90; // +shavasana
-  const dureeFixe     = dureeEchauf + dureePhysio + dureeCooldown;
-
-  // Cible focus : séances semaine 30-45 min → cible 38 min = 2280s
-  const cibleTotal    = Math.min(cfg.duree_min, 38) * 60;
-  const dureeFocusCible = Math.max(cibleTotal - dureeFixe, 300); // min 5 min de focus
-
-  // Bloc focus : banque filtrée, sans doublons, triée par objectif puis niveau
-  const banqueFiltre = banque.filter(e =>
-    cfg.focus.includes(e.categorie) &&
-    e.niveau <= cfg.niveau_max &&
-    !idsUtilises.has(e.id)
-  ).sort((a,b) => {
-    const aObj = a.categorie === objectif ? 0 : 1;
-    const bObj = b.categorie === objectif ? 0 : 1;
-    return aObj !== bObj ? aObj - bObj : a.niveau - b.niveau;
-  });
-
-  // Sélection des exercices focus — les paires G/D comptent double en durée
-  const sel = []; let dureeAccum = 0; const idsSelectionnes = new Set();
-  for (let i = 0; i < banqueFiltre.length; i++) {
-    const ex = banqueFiltre[i];
-    if (idsSelectionnes.has(ex.id)) continue;
-    const dur = parseInt(ex.duree_defaut) || 40;
-    const ser = parseInt(ex.series_defaut) || 1;
-    // Détecter paire G/D ou exercice bilatéral
-    const suivant = banqueFiltre[i + 1];
-    const estPaire = suivant && _estPaireGD(ex.nom, suivant.nom);
-    const nbPassages = (estPaire || ex.bilateral) ? 2 : 1;
-    const total = (dur * nbPassages + 10) * ser + 10;
-    if (dureeAccum + total > dureeFocusCible && sel.length >= 3) break;
-    sel.push(ex);
-    idsSelectionnes.add(ex.id);
-    if (estPaire) { sel.push(suivant); idsSelectionnes.add(suivant.id); i++; }
-    dureeAccum += total;
-  }
-
-  // Construction des blocs timer
-  const timerEchauf   = _buildTimerBloc(echaufWC,   'Échauffement', {noPause: true});
-  const timerPhysio   = _buildTimerBloc(mobilPhysio,'Mobilité',     {pauseGD: 5, pauseEntre: 10, pauseSeries: 10});
-  const timerFocus    = _buildTimerBloc(sel,          null,          {pauseGD: 5, pauseEntre: 20, pauseSeries: 20});
-  const timerCooldown = _buildTimerBloc(cooldownEx,  'Retour au calme', {pauseGD: 5, pauseEntre: 10, noPauseLast: true});
-  const shavasana     = {name:'Shavasana',speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:'Allongé, paumes vers le haut — relâche, respiration lente',duration:90,isRest:true,phase:'Retour au calme'};
-
-  return {
-    timer: [...timerEchauf, _R(15), ...timerPhysio, _R(10), ...timerFocus, _R(10), ...timerCooldown, shavasana],
-    log: sel.filter((e,i,a) => a.findIndex(x=>x.id===e.id)===i).map(ex => ({
-      n: ex.nom,
-      s: ex.series_defaut || 1,
-      d: ex.duree_defaut ? ex.duree_defaut + 's' : (ex.reps_defaut ? ex.reps_defaut + ' reps' : '')
-    }))
-  };
-}
-
-// ── buildSeanceFallback() ─────────────────────────────────────
-function buildSeanceFallback(idx) {
-  const F = [
-    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COIFFE_BASE,...COOLDOWN],
-      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Pont fessier',s:3,d:'50s'},{n:'Dead bug',s:2,d:'50s'},{n:'Chin tuck',s:2,d:'45s'},{n:'Rotation externe coiffe',s:1,d:'45s'}] },
-    { timer:[...PHYSIO_BASE,_E('Marche active','Marche active 15 minutes. Zone 2, 129 à 141 bpm.','Z2 : 129-141 bpm',900,'Cardio'),...COOLDOWN],
-      log:[{n:'Marche / vélo léger',s:1,d:'15min'},{n:'Chin tuck',s:2,d:'45s'}] },
-    { timer:[...PHYSIO_BASE,...COOLDOWN],
-      log:[{n:'Mobilité thoracique',s:3,d:'60s'},{n:'Pendule Codman',s:2,d:'60s'}] },
-    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COIFFE_BASE,...COOLDOWN],
-      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Gainage latéral',s:2,d:'20s'},{n:'Rotation externe coiffe',s:1,d:'45s'}] },
-    { timer:[...PHYSIO_BASE,...RENFO_BASE,...COOLDOWN],
-      log:[{n:'Planche complète',s:3,d:'35s'},{n:'Bird-dog',s:2,d:'60s'},{n:'Pont fessier',s:3,d:'50s'}] },
-    { timer:[...PHYSIO_BASE,
-        {name:'Prépare ta Garmin',speak:'Active Marche sur ta Garmin.',detail:'Active Marche sur ta Garmin',duration:60,isRest:true,phase:'Préparation'},
-        _E('Marche rapide — 20 min','Marche rapide 20 minutes. Zone Z2, 129 à 141 bpm.','Z2 : 129-141 bpm',1200,'Cardio'),
-        _E('Récupération marche','Ralentis. Marche tranquille 3 minutes.','Laisse la FC redescendre',180,'Cardio'),
-        ...COOLDOWN],
-      log:[{n:'Mobilité',s:1,d:'10min'},{n:'Marche rapide GPS',s:1,d:'20min'}] },
-    { timer:[...COOLDOWN], log:[{n:'Repos actif',s:1,d:''}] }
-  ];
-  return F[idx] || F[0];
-}
-
-// WEEKLY conservé comme alias pour compatibilité (Coach PLAN_JSON)
+// ── WEEKLY — 7 jours différenciés ────────────────────────────
 const WEEKLY = [
-  { // Lundi
-    label:"Lundi", type:"Mobilité & Renforcement + Coiffe", color:"#1D9E75",
-    timer:[...PHYSIO_BASE, ...RENFO_BASE, ...COIFFE_BASE, ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Rotation externe coiffe",s:1,d:"45s"},{n:"Élévation latérale coiffe",s:1,d:"40s"}]
-  },
-  { // Mardi
-    label:"Mardi", type:"Mobilité & Cardio léger", color:"#BA7517",
+  { // Lundi — Renforcement A : planche + bird-dog + coiffe
+    label:"Lundi", type:"Renforcement A — Planche + Coiffe", color:"#1D9E75",
     timer:[...PHYSIO_BASE,
-      _E("Marche active ou vélo léger","Marche active ou vélo léger. Rythme confortable, quinze minutes.","Rythme confortable — tu dois pouvoir parler",900,"Cardio"),
+      _E("Planche complète","Planche complète. Corps droit des talons à la tête.","Corps droit des talons à la tête",35,"Renforcement"),
+      _R(20),
+      _E("Planche complète","Planche complète, deuxième série.","2e série",35,"Renforcement"),
+      _R(20),
+      _E("Planche complète","Planche complète, troisième série.","3e série",35,"Renforcement"),
+      _R(20),
+      _E("Bird-dog","Bird-dog. Bras gauche et jambe droite tendus, maintiens cinq secondes.","Bras gauche + jambe droite — maintiens 5 sec",60,"Renforcement"),
+      _R(20),
+      _E("Bird-dog","Bird-dog, deuxième série.","2e série",60,"Renforcement"),
+      _R(20),
+      ...COIFFE_BASE,
       ...COOLDOWN],
-    log:[{n:"Marche / vélo léger",s:1,d:"15min"},{n:"Chin tuck",s:2,d:"45s"},{n:"Cat-cow",s:1,d:"60s"}]
+    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Coiffe",s:1,d:"45s"}]
   },
-  { // Mercredi
+  { // Mardi — Mobilité
+    label:"Mardi", type:"Mobilité & Récupération", color:"#BA7517",
+    timer:[...PHYSIO_BASE,
+      _E("Étirement pectoraux","Étirement des pectoraux. Bras en croix contre un cadre de porte, avance doucement.","Bras en croix — ouvre la poitrine",40,"Mobilité"),
+      _R(15),
+      _E("Étirement pectoraux","Étirement pectoraux, deuxième série.","Plus profond",40,"Mobilité"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
+      _R(15),
+      ...COOLDOWN],
+    log:[{n:"Étirement pectoraux",s:2,d:"40s"},{n:"Pendule Codman",s:2,d:"60s"}]
+  },
+  { // Mercredi — Récupération active (sans doublon thoracique)
     label:"Mercredi", type:"Récupération active", color:"#27AE60",
     timer:[...PHYSIO_BASE,
-      _E("Marche douce — 10 min","Marche douce pendant 10 minutes. Rythme très confortable, récupération active. Pas d'essoufflement.","Rythme très léger — récupération, pas d'effort",600,"Cardio"),
+      _E("Marche douce — 10 min","Marche douce pendant 10 minutes. Rythme très léger, récupération active. Pas d'essoufflement.","Rythme très léger — récupération, pas d'effort",600,"Cardio"),
       _R(20),
-      _E("Mobilité thoracique — rotation","Mobilité thoracique supplémentaire. Assis, mains derrière la tête, pivote lentement gauche et droite.","Mains derrière la tête — pivote lentement, amplitude maximale",60,"Mobilité"),
+      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
       _R(15),
-      _E("Mobilité thoracique — extension","Extension thoracique. Assis sur une chaise, mains derrière la tête, ouvre la poitrine vers le haut.","Mains derrière la tête — ouvre la poitrine vers le plafond",45,"Mobilité"),
-      _R(15),
-      _E("Étirement pectoraux","Étirement des pectoraux. Bras en croix contre un cadre de porte, avance doucement.","Bras en croix, avance lentement — ouvre la poitrine",40,"Mobilité"),
-      _R(15),
-      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu — laisse le poids décoapter l'épaule. Petit cercle sans forcer.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
-      _R(15),
-      _E("Pendule de Codman — série 2","Pendule de Codman, deuxième série. Sens inverse.","Petit cercle dans l'autre sens",60,"Coiffe"),
-      _R(15),
-      _E("Rotation thoracique assis — série 3","Rotation thoracique, troisième série. Amplitude maximale.","Amplitude maximale — sens opposé",40,"Mobilité"),
-      _R(15),
-      _E("Étirement pectoraux — série 2","Étirement pectoraux, deuxième côté ou plus profond.","Ouvre encore plus la poitrine",40,"Mobilité"),
+      _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
       _R(15),
       ...COOLDOWN],
-    log:[{n:"Mobilité thoracique",s:3,d:"60s"},{n:"Étirement pectoraux",s:2,d:"40s"},{n:"Pendule Codman",s:2,d:"60s"}]
+    log:[{n:"Marche douce",s:1,d:"10min"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
-  { // Jeudi
-    label:"Jeudi", type:"Renforcement + Coiffe", color:"#2980B9",
-    timer:[...PHYSIO_BASE, ...RENFO_BASE,
-      _E("Gainage latéral — gauche","Gainage latéral côté gauche.","Hanche décollée, corps aligné",20,"Renforcement"),
+  { // Jeudi — Renforcement B : pont fessier + dead bug + gainage + coiffe
+    label:"Jeudi", type:"Renforcement B — Pont + Gainage + Coiffe", color:"#2980B9",
+    timer:[...PHYSIO_BASE,
+      _E("Pont fessier","Pont fessier. Monte, serre les fessiers, maintiens trois secondes.","Monte, serre, maintiens 3 sec",50,"Renforcement"),
+      _R(20),
+      _E("Pont fessier","Pont fessier, deuxième série.","2e série",50,"Renforcement"),
+      _R(20),
+      _E("Pont fessier","Pont fessier, troisième série.","3e série",50,"Renforcement"),
+      _R(20),
+      _E("Dead bug","Dead bug. Sur le dos, descends bras droit et jambe gauche sans décoller le bas du dos.","Bras vers plafond, genoux à 90° — descends sans décoller",50,"Renforcement"),
+      _R(20),
+      _E("Dead bug","Dead bug, deuxième série.","2e série",50,"Renforcement"),
+      _R(20),
+      _E("Gainage latéral — gauche","Gainage latéral gauche. Hanche décollée, corps aligné.","Hanche décollée — corps aligné",20,"Renforcement"),
       _R(10),
-      _E("Gainage latéral — droite","Gainage latéral côté droit.","Hanche décollée, corps aligné",20,"Renforcement"),
+      _E("Gainage latéral — droite","Gainage latéral droit.","Même chose à droite",20,"Renforcement"),
       _R(10),
       _E("Gainage latéral — gauche","Gainage latéral gauche, deuxième série.","2e série",20,"Renforcement"),
       _R(10),
       _E("Gainage latéral — droite","Gainage latéral droit, deuxième série.","2e série",20,"Renforcement"),
-      ...COIFFE_BASE, ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Rotation externe coiffe",s:1,d:"45s"},{n:"Élévation latérale coiffe",s:1,d:"40s"}]
-  },
-  { // Vendredi
-    label:"Vendredi", type:"Mobilité & Renforcement", color:"#8E44AD",
-    timer:[...PHYSIO_BASE, ...RENFO_BASE,
-      _E("Gainage latéral — gauche","Gainage latéral côté gauche.","Hanche décollée, corps aligné",20,"Renforcement"),
-      _R(10),
-      _E("Gainage latéral — droite","Gainage latéral côté droit.","Hanche décollée, corps aligné",20,"Renforcement"),
-      _R(10),
+      _R(20),
+      ...COIFFE_BASE,
       ...COOLDOWN],
-    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Chin tuck",s:2,d:"45s"},{n:"Gainage latéral",s:1,d:"20s"}]
+    log:[{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Coiffe",s:1,d:"45s"}]
   },
-  { // Samedi
-    label:"Samedi", type:"Mobilité & Marche GPS", color:"#16A085",
+  { // Vendredi — Renforcement C : chin tuck + gainage + trapèzes
+    label:"Vendredi", type:"Renforcement C — Chin tuck + Trapèzes", color:"#8E44AD",
     timer:[...PHYSIO_BASE,
-      {name:"Prépare ta Garmin",speak:"Avant de démarrer la marche, active l'activité Marche ou Tapis roulant sur ta Garmin. Appuie sur Démarrer ici quand tu es prêt à partir.",detail:"Active Marche sur ta Garmin — attends le GPS si en extérieur",duration:60,isRest:true,phase:"Préparation"},
-      _E("Marche rapide — 20 min","Marche rapide pendant 20 minutes. Rythme soutenu — tu peux parler mais tu es essoufflé. Ta Garmin enregistre pour le VO₂ max.","Zone Z2 : 131-142 bpm — rythme soutenu mais confortable",1200,"Cardio"),
-      _E("Récupération marche","Ralentis progressivement. Marche tranquille 3 minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio"),
+      _E("Chin tuck","Chin tuck. Ramène le menton vers l'arrière, maintiens trois secondes.","Assis droit — menton vers l'arrière, maintiens 3 sec",45,"Renforcement"),
+      _R(15),
+      _E("Chin tuck","Chin tuck, deuxième série.","2e série",45,"Renforcement"),
+      _R(20),
+      _E("Gainage latéral — gauche","Gainage latéral gauche. Hanche décollée, corps aligné.","Hanche décollée — corps aligné",20,"Renforcement"),
+      _R(10),
+      _E("Gainage latéral — droite","Gainage latéral droit.","Même chose à droite",20,"Renforcement"),
+      _R(20),
+      _E("Trapèzes en Y","Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Renforcement"),
+      _R(10),
+      _E("Trapèzes en T","Trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Renforcement"),
+      _R(20),
       ...COOLDOWN],
-    log:[{n:"Mobilité",s:1,d:"10min"},{n:"Marche rapide GPS",s:1,d:"20min"},{n:"Récupération",s:1,d:"3min"}]
+    log:[{n:"Chin tuck",s:2,d:"45s"},{n:"Gainage latéral",s:1,d:"20s"},{n:"Trapèzes Y+T",s:1,d:"40s"}]
   },
-  { // Dimanche
-    label:"Dimanche", type:"Repos — Récupération", color:"#888",
-    timer:[...COOLDOWN],
-    log:[{n:"Repos actif",s:1,d:""}]
+  { // Samedi — Cardio Z2 tapis roulant
+    label:"Samedi", type:"Cardio Z2 + Mobilité", color:"#16A085",
+    timer:[...PHYSIO_BASE,
+      {name:"Prépare ta Garmin",speak:"Avant de démarrer, active l'activité Tapis roulant ou Marche sur ta Garmin. Appuie sur Démarrer quand tu es prêt.",detail:"Active Tapis roulant sur ta Garmin",duration:60,isRest:true,phase:"Préparation"},
+      _E("Tapis roulant / marche rapide — 20 min","Tapis roulant ou marche rapide, 20 minutes. Zone Z2, entre 131 et 142 battements. Ta Garmin enregistre pour le VO₂ max.","Z2 : 131-142 bpm — rythme soutenu mais confortable",1200,"Cardio"),
+      _E("Récupération — 3 min","Ralentis progressivement. Marche tranquille trois minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio"),
+      ...COOLDOWN],
+    log:[{n:"Tapis roulant Z2",s:1,d:"20min"},{n:"Récupération",s:1,d:"3min"}]
+  },
+  { // Dimanche — Yoga Iyengar Leçon 1
+    label:"Dimanche", type:"Yoga — Iyengar Leçon 1", color:"#888",
+    timer:[
+      _E("Sukhasana + Parvatāsana","Sukhasana. Assieds-toi en tailleur, dos droit. Lève les bras en Parvatāsana, paumes jointes vers le plafond. Respiration lente.","Assis en tailleur — bras levés, paumes jointes",120,"Yoga"),
+      _R(10),
+      _E("Tādāsana","Tādāsana. Debout, pieds joints, poids bien réparti. Corps aligné, bras le long du corps.","Debout, pieds joints — corps aligné, ancré",30,"Yoga"),
+      _R(10),
+      _E("Urdhva Hastāsana","Urdhva Hastāsana. Depuis Tādāsana, lève les bras au-dessus de la tête, paumes face à face. Étire vers le haut.","Bras levés — étire la colonne vers le haut",30,"Yoga"),
+      _R(10),
+      _E("Vrksāsana — gauche","Vrksāsana côté gauche. Pied contre la cheville ou la cuisse, jamais contre le genou. Bras levés. Équilibre.","Pied contre cuisse — jamais contre le genou",30,"Yoga"),
+      _R(10),
+      _E("Vrksāsana — droite","Vrksāsana côté droit.","Même chose à droite",30,"Yoga"),
+      _R(10),
+      _E("Uttānāsana I","Uttānāsana. Flexion avant debout. Mains sur un meuble ou le sol. Relâche le dos.","Mains sur support si dos sensible — relâche",30,"Yoga"),
+      _R(10),
+      _E("Utthita Trikonāsana — gauche","Utthita Trikonāsana gauche. Pieds écartés, bras en croix. Incline vers la gauche, main sur le tibia, regard vers le haut.","Pieds écartés — bras en ligne verticale",30,"Yoga"),
+      _R(10),
+      _E("Utthita Trikonāsana — droite","Utthita Trikonāsana droite.","Même chose à droite",30,"Yoga"),
+      _R(10),
+      _E("Uttānāsana I — repos","Uttānāsana. Repos entre postures debout. Mains sur support.","Relâche entre les poses debout",20,"Yoga"),
+      _R(10),
+      _E("Utthita Pārśvakonāsana — gauche","Utthita Pārśvakonāsana gauche. Pied gauche à 90°, genou fléchi au-dessus de la cheville. Bras allongé au-dessus de l'oreille.","Genou au-dessus de la cheville — bras allongé",30,"Yoga"),
+      _R(10),
+      _E("Utthita Pārśvakonāsana — droite","Utthita Pārśvakonāsana droite.","Même chose à droite",30,"Yoga"),
+      _R(10),
+      _E("Uttānāsana I — repos","Uttānāsana. Repos. Mains sur support.","Repos — mains sur support",20,"Yoga"),
+      _R(10),
+      _E("Virabhadrāsana II — gauche","Virabhadrāsana II gauche. Genou gauche fléchi, bras en croix, regard vers la main gauche.","Genou fléchi — bras en croix, regard devant",30,"Yoga"),
+      _R(10),
+      _E("Virabhadrāsana II — droite","Virabhadrāsana II droite.","Même chose à droite",30,"Yoga"),
+      _R(10),
+      _E("Parśvottānāsana sur appui","Parśvottānāsana. Flexion avant sur jambe avant, mains sur un meuble. Dos plat.","Mains sur support — dos plat, étire les ischio",30,"Yoga"),
+      _R(10),
+      _E("Uttānāsana I — fin debout","Uttānāsana, mains sur appui. Fin des postures debout.","Relâche — fin des postures debout",30,"Yoga"),
+      _R(15),
+      _E("Sukhasana — transition","Sukhasana. Pause avant les inversions. Respiration calme.","Pause de transition — respiration calme",60,"Yoga"),
+      _R(15),
+      _E("Sālamba Sarvāngāsana","Sālamba Sarvāngāsana. Chandelle. Couvertures pliées sous les épaules. Monte les jambes, soutiens le dos. Si difficile, jambes au mur.","Couvertures sous épaules — ou jambes au mur si difficile",60,"Yoga"),
+      _R(15),
+      _E("Ardha Halāsana","Ardha Halāsana. Demi-charrue. Descends les jambes vers le sol derrière la tête. Soutiens le dos.","Jambes vers le sol — soutiens le dos",30,"Yoga"),
+      _R(15),
+      _E("Jambes pliées sur l'abdomen","Ramène les genoux vers la poitrine depuis la chandelle. Enroule doucement.","Genoux vers poitrine — décompresse la colonne",20,"Yoga"),
+      _R(15),
+      {name:"Shavasana",speak:"Shavasana. Allonge-toi complètement, paumes vers le haut. Relâche chaque partie du corps. Minimum cinq minutes. Bravo.",detail:"Allongé, paumes vers le haut — minimum 5 minutes",duration:300,isRest:true,phase:"Yoga"}
+    ],
+    log:[{n:"Yoga Iyengar — Leçon 1",s:1,d:"~40min"}]
   }
 ];
 
@@ -4356,17 +4224,4 @@ if ('serviceWorker' in navigator) {
         // tournait déjà, on recharge la page pour servir le code à jour.
         reg.addEventListener('updatefound', () => {
           const sw = reg.installing;
-          if (!sw) return;
-          sw.addEventListener('statechange', () => {
-            if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-              location.reload();
-            }
-          });
-        });
-      })
-      .catch(err => console.warn('SW erreur:', err));
-  });
-}
-</script>
-</body>
-</html>
+          if (!sw) r
