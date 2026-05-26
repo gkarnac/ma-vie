@@ -2796,8 +2796,6 @@ function stbNext() {
     const next = S.seanceExercises[S.seanceIdx + 1];
     if (ex.isRest) {
       if (next) setTimeout(() => speak('Pause. Prochain : ' + next.name), 400);
-    } else {
-      setTimeout(() => speak(ex.speak || ex.name), 400);
     }
     setTimeout(() => {
       S.seanceRunning = true;
