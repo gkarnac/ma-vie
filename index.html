@@ -862,6 +862,8 @@ const S = {
   seanceTickBase: null,    // Date.now() au moment du dernier tick «officiel»
   seanceRpe: null,
   voiceEnabled: true, soundEnabled: true, selectedVoiceName: '',
+  exercices: [],          // banque d'exercices chargée depuis le Sheet
+  programme: [],          // programme hebdomadaire chargé depuis le Sheet
   weeklyOverrides: null,  // si le Coach a patché WEEKLY via PLAN_JSON
   medsPreset: [
     {nom:'Rosuvastatine',dose:''},{nom:'Gabapentin',dose:''},{nom:'Aventyl',dose:'10mg'},{nom:'Mélatonine',dose:''},{nom:'Bière',dose:'500ml'}
@@ -1054,6 +1056,7 @@ function saveCache() {
       plans: S.plans, sessions: S.sessions, wcSeances: S.wcSeances,
       wcFormes: S.wcFormes, wcPractices: S.wcPractices,
       exercices: S.exercices,
+      programme: S.programme,
       medsPreset: S.medsPreset,
       weeklyOverrides: S.weeklyOverrides,
       voiceEnabled: S.voiceEnabled, soundEnabled: S.soundEnabled, selectedVoiceName: S.selectedVoiceName,
@@ -1075,6 +1078,7 @@ function loadCache() {
     S.wcFormes = (d.wcFormes && d.wcFormes.length) ? d.wcFormes : [...DEFAULT_WC_FORMES];
     S.wcPractices = parseWcPractices(d.wcPractices || []);
     S.exercices = d.exercices || [];
+    S.programme = d.programme || [];
     if (d.medsPreset && d.medsPreset.length) S.medsPreset = d.medsPreset;
     if (d.weeklyOverrides) S.weeklyOverrides = d.weeklyOverrides;
     if (typeof d.voiceEnabled === 'boolean') S.voiceEnabled = d.voiceEnabled;
@@ -1103,6 +1107,7 @@ async function syncAll() {
     await ensureDefaultFormesPersisted();
     if (!S.wcFormes.length) S.wcFormes = [...DEFAULT_WC_FORMES];
     S.exercices = parseExercices(data.exercices || []);
+    S.programme = parseProgramme(data.programme || []);
     saveCache();
     setSyncState('ok', 'Synchronisé ✓');
     // Re-enrichir le timer si une séance est déjà sélectionnée
@@ -1177,6 +1182,114 @@ function parseExercices(rows) {
     variantes: String(e.variantes || ''),
     bilateral: e.bilateral === true || String(e.bilateral).toLowerCase() === 'true'
   }));
+}
+
+function parseProgramme(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(r => r.jour !== undefined && r.jour !== '').map(r => ({
+    jour:          parseInt(r.jour),
+    label:         String(r.label || ''),
+    type:          String(r.type || ''),
+    couleur:       String(r.couleur || '#888'),
+    exercices_json: String(r.exercices_json || '[]')
+  }));
+}
+
+// Construit un tableau WEEKLY à partir de S.programme + S.exercices.
+// Retourne null si S.programme est vide (fallback sur DAY_CONFIG).
+function buildWeeklyFromSheet() {
+  if (!S.programme.length || !S.exercices.length) return null;
+  const banque = {};
+  S.exercices.forEach(e => { banque[e.id] = e; });
+
+  // Exercices spéciaux non dans la banque (cardio, yoga, etc.)
+  const SPECIAUX = {
+    'marche-douce': {
+      name:'Marche douce — 10 min', phase:'Cardio',
+      speak:'Marche douce pendant 10 minutes. Rythme très léger, récupération active. Pas d\'essoufflement.',
+      detail:'Rythme très léger — récupération, pas d\'effort', duration:600
+    },
+    'tapis-z2': {
+      name:'Tapis roulant / marche rapide — 20 min', phase:'Cardio',
+      speak:'Tapis roulant ou marche rapide, 20 minutes. Zone Z2, entre 131 et 142 battements. Ta Garmin enregistre pour le VO₂ max.',
+      detail:'Z2 : 131-142 bpm — rythme soutenu mais confortable', duration:1200
+    },
+    'recuperation-cardio': {
+      name:'Récupération — 3 min', phase:'Cardio',
+      speak:'Ralentis progressivement. Marche tranquille trois minutes pour récupérer.',
+      detail:'Marche lente — laisse la FC redescendre', duration:180
+    },
+    'yoga-iyengar-1': null  // Le yoga reste en dur dans DAY_CONFIG[6]
+  };
+
+  const COOLDOWN_SHEET = [
+    _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
+    _E("Torsion allongée — gauche","Torsion allongée gauche. Genou basculé à droite, regarde à gauche.","Genou basculé à droite, bras en croix",30,"Retour au calme"),
+    _E("Torsion allongée — droite","Torsion allongée droite.","Genou basculé à gauche, bras en croix",30,"Retour au calme"),
+    _E("Étirement scalènes — gauche","Étirement des scalènes gauche. Oreille vers l'épaule, menton vers le plafond.","Oreille vers épaule, menton vers le plafond",30,"Retour au calme"),
+    _E("Étirement scalènes — droite","Étirement des scalènes droit.","Même chose à droite",30,"Retour au calme"),
+    _E("Ischio-jambiers — gauche","Ischio-jambiers gauche. Jambe tendue, mains derrière la cuisse.","Sur le dos, jambe tendue — mains derrière la cuisse",30,"Retour au calme"),
+    _E("Ischio-jambiers — droite","Ischio-jambiers droit.","Même chose à droite",30,"Retour au calme"),
+    {name:"Shavasana",speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:"Allongé, paumes vers le haut — relâche, respiration lente",duration:90,isRest:true,phase:"Retour au calme"}
+  ];
+
+  const weekly = S.programme
+    .slice()
+    .sort((a, b) => a.jour - b.jour)
+    .map(jour => {
+      // Dimanche (jour 6) : garde le yoga en dur
+      if (jour.jour === 6) return null;
+
+      let exJson = [];
+      try { exJson = JSON.parse(jour.exercices_json); } catch(e) {}
+
+      const timer = [...PHYSIO_BASE];
+      const logItems = [];
+
+      exJson.forEach(item => {
+        const special = SPECIAUX[item.id];
+        if (special === null) return; // yoga : ignoré ici
+        if (special) {
+          // Exercice spécial non dans la banque
+          if (item.pause && item.pause > 0) timer.push(_R(item.pause));
+          timer.push(Object.assign({}, special));
+          logItems.push({n: special.name, s: item.series || 1, d: special.duration + 's'});
+          return;
+        }
+        const ex = banque[item.id];
+        if (!ex) return;
+        const series = item.series || ex.series_defaut || 1;
+        const duree  = item.duree  || ex.duree_defaut  || 30;
+        const pause  = item.pause  !== undefined ? item.pause : 20;
+        for (let s = 1; s <= series; s++) {
+          const label = series > 1 ? (s === 1 ? ex.nom : ex.nom + ', série ' + s) : ex.nom;
+          const speakTxt = s === 1 ? (ex.description_vocale || ex.nom + '.') : (ex.nom + ', série ' + s + '.');
+          const detail = s === 1 ? (ex.description_courte || '') : (s === 2 ? '2e série' : s + 'e série');
+          timer.push({name: label, speak: speakTxt, detail: detail, duration: duree, phase: ex.categorie || 'Renforcement', exId: ex.id});
+          if (pause > 0) timer.push(_R(pause));
+        }
+        logItems.push({n: ex.nom, s: series, d: duree + 's'});
+      });
+
+      // Ajouter cooldown sauf cardio
+      if (jour.type && !jour.type.toLowerCase().includes('cardio') && !jour.type.toLowerCase().includes('récupération active')) {
+        timer.push(...COOLDOWN_SHEET);
+      } else {
+        timer.push(...COOLDOWN_SHEET);
+      }
+
+      return {
+        label:  jour.label,
+        type:   jour.type,
+        color:  jour.couleur,
+        timer:  timer,
+        log:    logItems
+      };
+    });
+
+  // Remplacer null (dimanche) par le yoga en dur de DAY_CONFIG
+  const result = weekly.map((w, i) => w === null ? DAY_CONFIG[i] : w);
+  return result.length === 7 ? result : null;
 }
 
 // Retrouve un exercice dans la banque par son nom (insensible à la casse, matching partiel)
@@ -1775,6 +1888,10 @@ const DAY_CONFIG = WEEKLY;
 // Retourne les 7 jours du programme. weeklyOverrides (patch Coach) prend le dessus si présent.
 function effectiveWeekly() {
   if (S.weeklyOverrides && S.weeklyOverrides.length === 7) return S.weeklyOverrides;
+  // Utiliser le programme du Sheet si disponible
+  const fromSheet = buildWeeklyFromSheet();
+  if (fromSheet) return fromSheet;
+  // Fallback sur DAY_CONFIG (programme codé en dur)
   return DAY_CONFIG.map(cfg => ({
     label: cfg.label,
     type:  cfg.type,
