@@ -1676,64 +1676,7 @@ const PHYSIO_BASE = [
   _E("Rotation tronc — coudes","Rotation du tronc avec coups de coude accentués. Accentue la rotation à chaque coude. Dix fois.","Coups de coude accentués — rotation complète",10,"Échauffement"),
 ];
 
-const RENFO_BASE = [
-  _E("Planche complète","Planche complète. Corps droit des talons à la tête.","Corps droit des talons à la tête",35,"Renforcement"),
-  _R(20),
-  _E("Planche complète","Planche complète, deuxième série.","2e série",35,"Renforcement"),
-  _R(20),
-  _E("Planche complète","Planche complète, troisième série.","3e série",35,"Renforcement"),
-  _R(20),
-  _E("Bird-dog","Bird-dog. Bras gauche et jambe droite tendus, maintiens cinq secondes, alterne.","Bras gauche + jambe droite — maintiens 5 sec",60,"Renforcement"),
-  _R(20),
-  _E("Bird-dog","Bird-dog, deuxième série.","2e série",60,"Renforcement"),
-  _R(20),
-  _E("Pont fessier","Pont fessier. Monte, serre les fessiers, maintiens trois secondes.","Monte, serre, maintiens 3 sec — redescends lentement",50,"Renforcement"),
-  _R(20),
-  _E("Pont fessier","Pont fessier, deuxième série.","2e série",50,"Renforcement"),
-  _R(20),
-  _E("Pont fessier","Pont fessier, troisième série.","3e série",50,"Renforcement"),
-  _R(20),
-  _E("Dead bug","Dead bug. Sur le dos, descends bras droit et jambe gauche sans décoller le bas du dos.","Bras vers plafond, genoux à 90° — descends sans décoller",50,"Renforcement"),
-  _R(20),
-  _E("Dead bug","Dead bug, deuxième série.","2e série",50,"Renforcement"),
-  _R(20),
-  _E("Chin tuck","Chin tuck. Ramène le menton vers l'arrière, maintiens trois secondes.","Assis droit — menton vers l'arrière, maintiens 3 sec",45,"Renforcement"),
-  _R(15),
-  _E("Chin tuck","Chin tuck, deuxième série.","2e série",45,"Renforcement"),
-  _R(20)
-];
-
-const COOLDOWN = [
-  _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
-  _E("Torsion allongée — gauche","Torsion allongée gauche. Genou basculé à droite, regarde à gauche.","Genou basculé à droite, bras en croix",30,"Retour au calme"),
-  _E("Torsion allongée — droite","Torsion allongée droite.","Genou basculé à gauche, bras en croix",30,"Retour au calme"),
-  _E("Étirement scalènes — gauche","Étirement des scalènes gauche. Oreille vers l'épaule, menton vers le plafond.","Oreille vers épaule, menton vers le plafond",30,"Retour au calme"),
-  _E("Étirement scalènes — droite","Étirement des scalènes droit.","Même chose à droite",30,"Retour au calme"),
-  _E("Ischio-jambiers — gauche","Ischio-jambiers gauche. Jambe tendue, mains derrière la cuisse.","Sur le dos, jambe tendue — mains derrière la cuisse",30,"Retour au calme"),
-  _E("Ischio-jambiers — droite","Ischio-jambiers droit.","Même chose à droite",30,"Retour au calme"),
-  {name:"Shavasana",speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:"Allongé, paumes vers le haut — relâche, respiration lente",duration:90,isRest:true,phase:"Retour au calme"}
-];
-
-// Exercices coiffe des rotateurs
-const COIFFE_BASE = [
-  _R(15),
-  _E("Rotation externe — gauche","Rotation externe bras gauche. Coude à 90° collé au corps, tourne vers l'extérieur lentement.","Coude collé — rotation lente et contrôlée",45,"Coiffe"),
-  _R(10),
-  _E("Rotation externe — droite","Rotation externe bras droit. Reste doux sur l'épaule droite.","Doux sur l'épaule droite — arrête si douleur > 3",45,"Coiffe"),
-  _R(15),
-  _E("Rotation interne — gauche","Rotation interne bras gauche. Coude à 90°, tourne vers l'intérieur.","Coude collé au corps — mouvement contrôlé",45,"Coiffe"),
-  _R(10),
-  _E("Rotation interne — droite","Rotation interne bras droit.","Doux — surveille la douleur",45,"Coiffe"),
-  _R(15),
-  _E("Élévation latérale — gauche","Élévation latérale gauche. Pouce vers le bas, monte à 90° max.","Pouce vers le bas, monte à 90° maximum",40,"Coiffe"),
-  _R(10),
-  _E("Élévation latérale — droite","Élévation latérale droite. Doux sur l'épaule droite.","Doux — arrête à la douleur",40,"Coiffe"),
-  _R(15),
-  _E("Trapèzes en Y","Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Coiffe"),
-  _R(10),
-  _E("Trapèzes en T","Trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Coiffe"),
-  _R(15)
-];
+// RENFO_BASE, COOLDOWN et COIFFE_BASE supprimés — le programme vient maintenant du Sheet (feuille Programme).
 
 // ── WEEKLY — 7 jours différenciés ────────────────────────────
 const WEEKLY = [
@@ -1749,9 +1692,7 @@ const WEEKLY = [
       _E("Bird-dog","Bird-dog. Bras gauche et jambe droite tendus, maintiens cinq secondes.","Bras gauche + jambe droite — maintiens 5 sec",60,"Renforcement"),
       _R(20),
       _E("Bird-dog","Bird-dog, deuxième série.","2e série",60,"Renforcement"),
-      _R(20),
-      ...COIFFE_BASE,
-      ...COOLDOWN],
+      _R(20)],
     log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Coiffe",s:1,d:"45s"}]
   },
   { // Mardi — Mobilité
@@ -1764,8 +1705,7 @@ const WEEKLY = [
       _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
       _R(15),
       _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
-      _R(15),
-      ...COOLDOWN],
+      _R(15)],
     log:[{n:"Étirement pectoraux",s:2,d:"40s"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
   { // Mercredi — Récupération active (sans doublon thoracique)
@@ -1776,8 +1716,7 @@ const WEEKLY = [
       _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
       _R(15),
       _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
-      _R(15),
-      ...COOLDOWN],
+      _R(15)],
     log:[{n:"Marche douce",s:1,d:"10min"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
   { // Jeudi — Renforcement B : pont fessier + dead bug + gainage + coiffe
@@ -1800,9 +1739,7 @@ const WEEKLY = [
       _E("Gainage latéral — gauche","Gainage latéral gauche, deuxième série.","2e série",20,"Renforcement"),
       _R(10),
       _E("Gainage latéral — droite","Gainage latéral droit, deuxième série.","2e série",20,"Renforcement"),
-      _R(20),
-      ...COIFFE_BASE,
-      ...COOLDOWN],
+      _R(20)],
     log:[{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Coiffe",s:1,d:"45s"}]
   },
   { // Vendredi — Renforcement C : chin tuck + gainage + trapèzes
@@ -1819,8 +1756,7 @@ const WEEKLY = [
       _E("Trapèzes en Y","Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Renforcement"),
       _R(10),
       _E("Trapèzes en T","Trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Renforcement"),
-      _R(20),
-      ...COOLDOWN],
+      _R(20)],
     log:[{n:"Chin tuck",s:2,d:"45s"},{n:"Gainage latéral",s:1,d:"20s"},{n:"Trapèzes Y+T",s:1,d:"40s"}]
   },
   { // Samedi — Cardio Z2 tapis roulant
@@ -1828,8 +1764,7 @@ const WEEKLY = [
     timer:[...PHYSIO_BASE,
       {name:"Prépare ta Garmin",speak:"Avant de démarrer, active l'activité Tapis roulant ou Marche sur ta Garmin. Appuie sur Démarrer quand tu es prêt.",detail:"Active Tapis roulant sur ta Garmin",duration:60,isRest:true,phase:"Préparation"},
       _E("Tapis roulant / marche rapide — 20 min","Tapis roulant ou marche rapide, 20 minutes. Zone Z2, entre 131 et 142 battements. Ta Garmin enregistre pour le VO₂ max.","Z2 : 131-142 bpm — rythme soutenu mais confortable",1200,"Cardio"),
-      _E("Récupération — 3 min","Ralentis progressivement. Marche tranquille trois minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio"),
-      ...COOLDOWN],
+      _E("Récupération — 3 min","Ralentis progressivement. Marche tranquille trois minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio")],
     log:[{n:"Tapis roulant Z2",s:1,d:"20min"},{n:"Récupération",s:1,d:"3min"}]
   },
   { // Dimanche — Yoga Iyengar Leçon 1
