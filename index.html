@@ -787,21 +787,9 @@ textarea{resize:vertical;min-height:68px}
         <span class="tg" data-g="ptloc" data-v="hanche">Hanche</span>
       </div>
     </div>
-    <div class="fg" style="margin:0">
-      <label>Intensité effort perçu (RPE)</label>
-      <div class="pain-btns" id="pt-rpe-btns">
-        <button class="pb" data-rpe="1" type="button" onclick="selPtRpe(1,this)">1</button>
-        <button class="pb" data-rpe="2" type="button" onclick="selPtRpe(2,this)">2</button>
-        <button class="pb" data-rpe="3" type="button" onclick="selPtRpe(3,this)">3</button>
-        <button class="pb" data-rpe="4" type="button" onclick="selPtRpe(4,this)">4</button>
-        <button class="pb" data-rpe="5" type="button" onclick="selPtRpe(5,this)">5</button>
-        <button class="pb" data-rpe="6" type="button" onclick="selPtRpe(6,this)">6</button>
-        <button class="pb" data-rpe="7" type="button" onclick="selPtRpe(7,this)">7</button>
-        <button class="pb" data-rpe="8" type="button" onclick="selPtRpe(8,this)">8</button>
-        <button class="pb" data-rpe="9" type="button" onclick="selPtRpe(9,this)">9</button>
-        <button class="pb" data-rpe="10" type="button" onclick="selPtRpe(10,this)">10</button>
-      </div>
-      <div class="ph" id="pt-rpe-ph">— optionnel</div>
+    <div class="fg hidden" id="pt-exeval-section" style="margin:0">
+      <label>Difficulté par exercice</label>
+      <div id="pt-exeval-list"></div>
     </div>
     <div class="fg">
       <label>Note rapide (optionnel)</label>
@@ -872,7 +860,7 @@ const S = {
   todayStr: localDateStr(new Date()),
   selectedDay: localDateStr(new Date()),
   weekOffset: 0,
-  postTimerPlan: null, postTimerPain: null, postTimerRpe: null, postTimerSeanceId: null,
+  postTimerPlan: null, postTimerPain: null, postTimerRpe: null, postTimerExEval: {}, postTimerSeanceId: null,
   wakeLock: null,
   coachMessages: [],
   coachPlan: null,
@@ -2097,14 +2085,42 @@ async function timerDone(planId) {
   openPostTimerModal(plan);
 }
 
+// IDs des exercices avec progression (excluant chin tuck ex-051 et coiffe ex-053 à ex-060)
+const EX_AVEC_PROGRESSION = new Set(['ex-047','ex-048','ex-049','ex-050','ex-052','ex-014','ex-015','ex-016','ex-017','ex-018','ex-019','ex-020','ex-021','ex-022','ex-023','ex-024','ex-026','ex-027']);
+
 function openPostTimerModal(plan) {
   S.postTimerPlan = plan; S.postTimerPain = null;
+  S.postTimerExEval = {}; // {exId: 'facile'|'correct'|'dur'}
   document.querySelectorAll('#pt-pbs .pb').forEach(b => b.classList.remove('on'));
   document.querySelectorAll('.tg[data-g="ptloc"]').forEach(t => t.classList.remove('on'));
   document.getElementById('pt-ph').textContent = '— sélectionne un niveau';
   document.getElementById('pt-note').value = '';
-  S.postTimerRpe = null; document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on')); document.getElementById('pt-rpe-ph').textContent = '— optionnel';
   document.getElementById('pt-subtitle').textContent = 'Après ' + (plan.duree_reelle || plan.duree_prevue || '') + ' min de ' + (plan.habitude_nom || '');
+
+  // Détecter les exercices avec progression dans la séance
+  const exEvalSection = document.getElementById('pt-exeval-section');
+  const exEvalList = document.getElementById('pt-exeval-list');
+  const exercicesFaits = (S.seanceExercises || []).filter(e => e.exId && EX_AVEC_PROGRESSION.has(e.exId));
+  // Dédupliquer par exId
+  const vus = new Set();
+  const uniques = exercicesFaits.filter(e => { if (vus.has(e.exId)) return false; vus.add(e.exId); return true; });
+
+  if (uniques.length) {
+    exEvalSection.classList.remove('hidden');
+    exEvalList.innerHTML = uniques.map(e => `
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">${e.name}</div>
+        <div style="display:flex;gap:6px">
+          <button class="eval-btn" data-exid="${e.exId}" data-val="facile" onclick="selExEval('${e.exId}','facile',this)" style="flex:1;padding:7px 0;border-radius:var(--rad);border:1px solid var(--border2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer">👇 Trop facile</button>
+          <button class="eval-btn" data-exid="${e.exId}" data-val="correct" onclick="selExEval('${e.exId}','correct',this)" style="flex:1;padding:7px 0;border-radius:var(--rad);border:1px solid var(--border2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer">✓ Correct</button>
+          <button class="eval-btn" data-exid="${e.exId}" data-val="dur" onclick="selExEval('${e.exId}','dur',this)" style="flex:1;padding:7px 0;border-radius:var(--rad);border:1px solid var(--border2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer">👆 Trop dur</button>
+        </div>
+      </div>`).join('');
+  } else {
+    exEvalSection.classList.add('hidden');
+    exEvalList.innerHTML = '';
+  }
+
   openModal('modal-posttimer');
 }
 
@@ -2466,17 +2482,25 @@ async function delJournal(id) {
 }
 
 // ── POST-TIMER ─────────────────────────────────────────────────
-function selPtRpe(val, btn) {
-  S.postTimerRpe = val;
-  document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  const labels = ['','Très léger','Léger','Modéré','Modéré+','Difficile','Difficile+','Très difficile','Très difficile+','Maximal','Maximal absolu'];
-  document.getElementById('pt-rpe-ph').innerHTML = '<span style="font-weight:600">' + val + '/10 — ' + (labels[val]||'') + '</span>';
+function selExEval(exId, val, btn) {
+  S.postTimerExEval[exId] = val;
+  // Mettre à jour le style des 3 boutons du groupe
+  const groupe = btn.closest('div[style]').querySelectorAll('.eval-btn');
+  groupe.forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--txt2)';
+    b.style.borderColor = 'var(--border2)';
+  });
+  // Couleur selon la valeur
+  const colors = {facile:'#1D9E75', correct:'var(--accent)', dur:'#D85A30'};
+  btn.style.background = colors[val] || 'var(--accent)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = colors[val] || 'var(--accent)';
 }
 
 function skipPostTimer() {
   S.postTimerPlan = null; S.postTimerPain = null;
-  S.postTimerRpe = null; document.querySelectorAll('#pt-rpe-btns .pb').forEach(b => b.classList.remove('on')); document.getElementById('pt-rpe-ph').textContent = '— optionnel';
+  S.postTimerRpe = null; S.postTimerExEval = {};
   closeModal('modal-posttimer');
 }
 
@@ -2493,8 +2517,9 @@ async function savePostTimer() {
     locations: locs, medications: [],
     exercises: hab ? [hab.nom] : (plan ? [plan.habitude_nom] : []),
     duration: plan ? (plan.duree_reelle || plan.duree_prevue) : null,
-    intensity: S.postTimerRpe || null, events: [],
+    intensity: null, events: [],
     notes: note || ('Post-session ' + (plan ? plan.habitude_nom : '')),
+    ex_eval: Object.keys(S.postTimerExEval || {}).length ? JSON.stringify(S.postTimerExEval) : null,
     source: 'post-timer'
   };
   const btn = document.getElementById('pt-savebtn');
@@ -2504,14 +2529,6 @@ async function savePostTimer() {
     if (!res.ok) throw new Error();
     S.journalEntries.push(entry);
     S.journalEntries.sort((a,b) => a.date.localeCompare(b.date));
-    // Mettre à jour le RPE dans WcSeances si cette session vient du timer
-    if (S.postTimerSeanceId && S.postTimerRpe) {
-      const seance = S.wcSeances.find(s => s.id === S.postTimerSeanceId);
-      if (seance) {
-        seance.rpe = S.postTimerRpe;
-        try { api({action:'saveWcSeance', data: JSON.stringify({id: seance.id, rpe: seance.rpe})}); } catch(e) {}
-      }
-    }
     S.postTimerSeanceId = null;
     saveCache(); toast('Séance enregistrée ✓');
   } catch(e) { toast('Erreur réseau.'); }
