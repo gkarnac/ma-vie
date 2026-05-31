@@ -1112,9 +1112,10 @@ async function syncAll() {
 
 function parseWcFormes(rows) {
   if (!Array.isArray(rows)) return [];
-  return rows.filter(f => f.id).map(f => ({
+  return rows.filter(f => f.id).map((f, i) => ({
     id: String(f.id),
     nom: f.nom || '',
+    ordre: f.ordre !== undefined && f.ordre !== '' ? parseInt(f.ordre) : i,
     categorie: f.categorie || 'Autre'
   }));
 }
@@ -1129,7 +1130,8 @@ async function ensureDefaultFormesPersisted() {
   const manquantes = DEFAULT_WC_FORMES.filter(d => !existingNoms.has(d.nom.toLowerCase()));
   if (!manquantes.length) return;
   for (const f of manquantes) {
-    S.wcFormes.push({ id: f.id, nom: f.nom, categorie: f.categorie });
+    const ordre = S.wcFormes.length;
+    S.wcFormes.push({ id: f.id, nom: f.nom, categorie: f.categorie, ordre: ordre });
     try {
       await api({ action: 'addWcForme', data: JSON.stringify(f) });
     } catch (e) { /* hors ligne : sera re-tenté au prochain sync */ }
@@ -3060,14 +3062,23 @@ async function saveSeanceComplete() {
 
 function renderWcFormes() {
   const container = document.getElementById('wc-forms-list');
-  const cats = [...new Set(S.wcFormes.map(f => f.categorie))];
+  // Trier par ordre
+  const sorted = [...S.wcFormes].sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+  const cats = [...new Set(sorted.map(f => f.categorie))];
   let html = '';
   cats.forEach(cat => {
     html += '<div class="wc-cat-label">' + cat + '</div>';
-    S.wcFormes.filter(f => f.categorie === cat).forEach(f => {
+    const catFormes = sorted.filter(f => f.categorie === cat);
+    catFormes.forEach((f, idx) => {
       const checked = !!S.wcChecked[f.id];
       const passes = S.wcPasses[f.id] || 1;
+      const isFirst = idx === 0;
+      const isLast = idx === catFormes.length - 1;
       html += '<div class="wc-forme-item">' +
+        '<div style="display:flex;flex-direction:column;gap:2px;margin-right:4px">' +
+          '<button class="wc-pass-btn" style="font-size:9px;padding:1px 4px" ' + (isFirst ? 'disabled' : '') + ' onclick="moveWcForme(\'' + f.id + '\',-1)">▲</button>' +
+          '<button class="wc-pass-btn" style="font-size:9px;padding:1px 4px" ' + (isLast ? 'disabled' : '') + ' onclick="moveWcForme(\'' + f.id + '\',+1)">▼</button>' +
+        '</div>' +
         '<input type="checkbox" id="wc-chk-' + f.id + '" ' + (checked ? 'checked' : '') + ' onchange="toggleWcForme(\'' + f.id + '\', this.checked)">' +
         '<label for="wc-chk-' + f.id + '" class="wc-forme-name">' + f.nom + '</label>' +
         '<div class="wc-pass-group">' +
@@ -3080,6 +3091,29 @@ function renderWcFormes() {
     });
   });
   container.innerHTML = html;
+}
+
+async function moveWcForme(id, delta) {
+  // Trier toutes les formes par ordre actuel
+  const sorted = [...S.wcFormes].sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+  const idx = sorted.findIndex(f => f.id === id);
+  if (idx < 0) return;
+  const swapIdx = idx + delta;
+  if (swapIdx < 0 || swapIdx >= sorted.length) return;
+  // Échanger les ordres
+  const tmp = sorted[idx].ordre ?? idx;
+  sorted[idx].ordre = sorted[swapIdx].ordre ?? swapIdx;
+  sorted[swapIdx].ordre = tmp;
+  // Renuméroter proprement 0..n
+  sorted.forEach((f, i) => { f.ordre = i; });
+  // Mettre à jour S.wcFormes
+  S.wcFormes = sorted;
+  saveCache();
+  renderWcFormes();
+  // Persister dans le Sheet
+  try {
+    await api({action:'saveWcFormeOrdre', updates: JSON.stringify(sorted.map(f => ({id: f.id, ordre: f.ordre})))});
+  } catch(e) {}
 }
 
 function toggleWcForme(id, checked) {
@@ -3113,7 +3147,8 @@ async function saveNewForme() {
     toast('Cette forme existe déjà.'); return;
   }
   const newId = 'wc-' + Date.now();
-  S.wcFormes.push({id: newId, nom: nom, categorie: cat});
+  const newOrdre = S.wcFormes.length;
+  S.wcFormes.push({id: newId, nom: nom, categorie: cat, ordre: newOrdre});
   saveCache();
   document.getElementById('new-forme-name').value = '';
   closeModal('modal-forme');
