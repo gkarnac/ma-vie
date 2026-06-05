@@ -1212,16 +1212,7 @@ function buildWeeklyFromSheet() {
     'yoga-iyengar-1': null  // Le yoga reste en dur dans DAY_CONFIG[6]
   };
 
-  const COOLDOWN_SHEET = [
-    _E("Enfant étendu sur les coudes","Enfant étendu sur les coudes. Appuie-toi sur tes avant-bras. Relâche le dos.","Avant-bras au sol, dos relâché — pas de pression sur l'épaule",60,"Retour au calme"),
-    _E("Torsion allongée — gauche","Torsion allongée gauche. Genou basculé à droite, regarde à gauche.","Genou basculé à droite, bras en croix",30,"Retour au calme"),
-    _E("Torsion allongée — droite","Torsion allongée droite.","Genou basculé à gauche, bras en croix",30,"Retour au calme"),
-    _E("Étirement scalènes — gauche","Étirement des scalènes gauche. Oreille vers l'épaule, menton vers le plafond.","Oreille vers épaule, menton vers le plafond",30,"Retour au calme"),
-    _E("Étirement scalènes — droite","Étirement des scalènes droit.","Même chose à droite",30,"Retour au calme"),
-    _E("Ischio-jambiers — gauche","Ischio-jambiers gauche. Jambe tendue, mains derrière la cuisse.","Sur le dos, jambe tendue — mains derrière la cuisse",30,"Retour au calme"),
-    _E("Ischio-jambiers — droite","Ischio-jambiers droit.","Même chose à droite",30,"Retour au calme"),
-    {name:"Shavasana",speak:"Shavasana. Allonge-toi, paumes vers le haut. Relâche. Respiration lente. Bravo pour cette séance.",detail:"Allongé, paumes vers le haut — relâche, respiration lente",duration:90,isRest:true,phase:"Retour au calme"}
-  ];
+  // COOLDOWN_SHEET supprimé — le cooldown est maintenant dans exercices_json du Sheet, spécifique à chaque séance
 
   const weekly = S.programme
     .slice()
@@ -1233,7 +1224,7 @@ function buildWeeklyFromSheet() {
       let exJson = [];
       try { exJson = JSON.parse(jour.exercices_json); } catch(e) {}
 
-      const timer = [...PHYSIO_BASE];
+      const timer = [...PHYSIO_BASE, _R(20)]; // pause de transition après l'échauffement
       const logItems = [];
 
       exJson.forEach(item => {
@@ -1261,12 +1252,7 @@ function buildWeeklyFromSheet() {
         logItems.push({n: ex.nom, s: series, d: duree + 's'});
       });
 
-      // Ajouter cooldown sauf cardio
-      if (jour.type && !jour.type.toLowerCase().includes('cardio') && !jour.type.toLowerCase().includes('récupération active')) {
-        timer.push(...COOLDOWN_SHEET);
-      } else {
-        timer.push(...COOLDOWN_SHEET);
-      }
+      // Le cooldown est géré dans exercices_json du Sheet (spécifique aux muscles travaillés)
 
       return {
         label:  jour.label,
@@ -1642,14 +1628,14 @@ const PHYSIO_BASE = [
   _E("Lunge droit","Lunge droit. Pied droit devant, genou à 90°, hanche vers le sol. Dix secondes.","Genou à 90° — hanche vers le sol",10,"Échauffement"),
   _E("Low lunge droit","Low lunge droit. Genou arrière au sol, psoas étiré, genou avant pousse vers l'avant. Dix secondes.","Genou arrière au sol — psoas étiré, genou avant pousse",10,"Échauffement"),
   // ── 5. Ischio-jambiers debout ──
-  _E("Balancement vers les pieds","Balancement corps gauche-droite vers les pieds. Corps souple, bras suivent le mouvement. Cinq fois.","Corps souple — bras suivent",10,"Échauffement"),
-  _E("Tenir pied gauche","Tenir pied gauche. Jambe tendue. Dix secondes.","Jambe tendue — maintiens",10,"Échauffement"),
-  _E("Tenir pied droit","Tenir pied droit. Même chose à droite. Dix secondes.","Même chose à droite",10,"Échauffement"),
-  _E("Tenir les deux chevilles","Pieds écartés, attrape les deux chevilles. Pince large, laisse la gravité travailler. Dix secondes.","Pieds écartés — pince large, gravité travaille",10,"Échauffement"),
-  _E("Agripper orteils gauche","Orteils gauche vers toi, jambe tendue. Dix secondes.","Orteils vers soi — jambe gauche tendue",10,"Échauffement"),
-  _E("Agripper cheville gauche","Agripper cheville gauche. Étirement ischio-jambiers. Dix secondes.","Cheville gauche — ischio-jambiers",10,"Échauffement"),
-  _E("Agripper orteils droit","Orteils droit vers toi, jambe tendue. Dix secondes.","Orteils vers soi — jambe droite tendue",10,"Échauffement"),
-  _E("Agripper cheville droite","Agripper cheville droite. Dix secondes.","Cheville droite — ischio-jambiers",10,"Échauffement"),
+  _E("Balancement vers les pieds","Balancement corps gauche-droite vers les pieds. Pieds écartés, corps souple, bras suivent. Cinq fois.","Pieds écartés — corps souple, bras suivent",10,"Échauffement"),
+  _E("Cheville gauche — pince","Agrippe la cheville gauche. Pieds écartés, jambes tendues. Laisse le poids du corps agir. Dix secondes.","Cheville gauche — laisse le poids agir",10,"Échauffement"),
+  _E("Cheville droite — pince","Agrippe la cheville droite. Même position. Dix secondes.","Cheville droite — même chose",10,"Échauffement"),
+  _E("Pince large — deux chevilles","Pieds écartés, attrape les deux chevilles. Pince large, laisse la gravité travailler. Dix secondes.","Deux chevilles — pince large, gravité travaille",10,"Échauffement"),
+  _E("Ischio gauche — orteils","Jambe gauche tendue vers l'avant, talon au sol, orteils vers toi. Agrippe les orteils et maintiens. Dix secondes.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
+  _E("Ischio gauche — cheville","Dépose la plante du pied gauche. Agrippe la cheville et maintiens. Dix secondes.","Plante au sol — agrippe la cheville",10,"Échauffement"),
+  _E("Ischio droit — orteils","Jambe droite tendue vers l'avant, talon au sol, orteils vers toi. Agrippe les orteils et maintiens. Dix secondes.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
+  _E("Ischio droit — cheville","Dépose la plante du pied droit. Agrippe la cheville et maintiens. Dix secondes.","Plante au sol — agrippe la cheville",10,"Échauffement"),
   // ── 6. Bas du corps ──
   _E("Descente fesses-talons + pince","Enchaîne descente fesses vers talons et pince debout. Cinq fois en continu.","Descente fesses-talons puis pince — 5 fois",20,"Échauffement"),
   // ── 7. Hanches, flancs et cage thoracique ──
