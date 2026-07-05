@@ -1494,38 +1494,12 @@ function renderHabList(isPast) {
   const plans = todayPlans();
   const wcSeances = todayWcSeances();
 
-  // Aperçu WEEKLY pour les jours futurs (ou aujourd'hui) sans séance créée
-  const isFuture = S.selectedDay >= S.todayStr;
-  const selDate = new Date(S.selectedDay + 'T12:00:00');
-  const dayIdx = jsToDayIdx(selDate.getDay());
-  const W = effectiveWeekly();
-  const weeklyDay = W[dayIdx];
-  const showWeeklyPreview = isFuture && !wcSeances.length && weeklyDay && weeklyDay.type !== 'Repos — Récupération';
-
-  if (!plans.length && !wcSeances.length && !showWeeklyPreview) {
+  if (!plans.length && !wcSeances.length) {
     container.innerHTML = '<p class="empty">Rien de planifié.<br>Clique "+ Planifier" pour ajouter.</p>';
     return;
   }
 
   let html = '';
-
-  // Aperçu WEEKLY (lecture seule, jour futur sans séance créée)
-  if (showWeeklyPreview) {
-    const prog = weeklyDay.timer || [];
-    const totalMin = prog.reduce((acc, ex) => acc + (ex.duration ? Math.round(ex.duration / 60) : 0), 0);
-    html += `<div class="hab-card wc" style="opacity:0.8">
-      <div class="hab-row">
-        <div class="hab-icon" style="background:#534AB720">🏋️</div>
-        <div class="hab-info">
-          <div class="hab-name">${weeklyDay.type}</div>
-          <div class="hab-meta" style="color:var(--txt3)">Programme prévu · ${totalMin} min env.</div>
-        </div>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--txt2);line-height:1.8">
-        ${prog.slice(0,5).map(ex => `<span style="display:inline-block;margin-right:8px">· ${ex.name}${ex.sets > 1 ? ' ×'+ex.sets : ''}</span>`).join('')}${prog.length > 5 ? `<span style="color:var(--txt3)">+ ${prog.length - 5} autres</span>` : ''}
-      </div>
-    </div>`;
-  }
 
   // Séances Wing Chun depuis WC Tracker
   wcSeances.forEach(seance => {
@@ -3852,7 +3826,7 @@ function parseFitFile(bytes, filename) {
   return result;
 }
 
-function startCoachSession() {
+async function startCoachSession() {
   const data = buildDataSummary();
 
   const lines = [];
@@ -3956,27 +3930,48 @@ function startCoachSession() {
   var summary = lines.join('\n');
   S.coachSummary = summary;
 
-  // Afficher dans l'interface
-  var container = document.getElementById('coach-messages');
-  container.innerHTML = '<div class="card" style="margin-bottom:12px">' +
-    '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--green)">✓ Résumé généré</div>' +
-    '<pre style="font-size:11px;color:var(--txt2);white-space:pre-wrap;line-height:1.5;max-height:200px;overflow-y:auto">' + summary + '</pre>' +
-    '<button class="btn" style="margin-top:12px" onclick="copyAndInvite()">Copier et ouvrir Claude</button>' +
-    '</div>' +
-    '<div style="background:var(--bg3);border-radius:var(--rad-lg);padding:14px;font-size:13px;line-height:1.7;color:var(--txt2)">' +
-    '<strong style="color:var(--txt)">Comment procéder :</strong><br>' +
-    '1. Clique "Copier et ouvrir Claude" ci-dessus<br>' +
-    '2. Colle dans la conversation Claude<br>' +
-    '3. Claude analyse et propose un plan<br>' +
-    '4. Discute et ajuste le plan avec Claude<br>' +
-    '5. Quand tu es satisfait, demande à Claude de générer un bloc <strong style="color:var(--green)">PLAN_JSON</strong><br>' +
-    '6. Colle ce bloc ici pour créer les engagements automatiquement' +
-    '</div>' +
-    '<div style="margin-top:14px">' +
-    '<p class="slabel" style="margin-bottom:8px">Importer un plan de Claude</p>' +
-    '<textarea id="plan-import-txt" style="width:100%;height:100px;font-size:12px;font-family:monospace" placeholder="Colle ici le bloc PLAN_JSON généré par Claude..."></textarea>' +
-    '<button class="btn" style="margin-top:8px" onclick="importCoachPlan()">Appliquer le plan</button>' +
-    '</div>';
+  // Réinitialiser la conversation et envoyer automatiquement au Coach
+  S.coachMessages = [];
+  var userPrompt = 'Voici mon résumé hebdomadaire. Analyse mes séances (RPE + drapeaux douleur), propose des ajustements au programme WEEKLY si nécessaire, et un plan d\'engagements pour la semaine prochaine.\n\n' + summary;
+  S.coachMessages.push({role: 'user', content: userPrompt});
+  renderCoachMessages(S.coachMessages);
+  document.getElementById('coach-input-wrap').style.display = 'flex';
+  document.getElementById('coach-plan-wrap').style.display = 'none';
+
+  var btn = document.getElementById('coach-start-btn');
+  btn.disabled = true; btn.textContent = 'Analyse en cours…';
+  S.coachAnalysing = true;
+  addTypingIndicator();
+
+  try {
+    var result = await api({
+      action: 'callClaude',
+      messages: JSON.stringify(S.coachMessages),
+      system: COACH_SYSTEM,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2000
+    });
+    var assistantText = result.text || 'Erreur.';
+    S.coachMessages.push({role: 'assistant', content: assistantText});
+    removeTypingIndicator();
+    renderCoachMessages(S.coachMessages);
+
+    var planMatch = assistantText.match(/<PLAN>([\s\S]*?)<\/PLAN>/);
+    if (planMatch) {
+      try {
+        S.coachPlan = JSON.parse(planMatch[1].trim());
+        renderCoachPlan(S.coachPlan);
+        document.getElementById('coach-plan-wrap').style.display = 'block';
+      } catch(e2) {}
+    }
+    saveCache();
+  } catch(e) {
+    removeTypingIndicator();
+    S.coachMessages.push({role: 'assistant', content: '❌ ' + (e.message || 'Erreur de connexion au Coach.')});
+    renderCoachMessages(S.coachMessages);
+  }
+  S.coachAnalysing = false;
+  btn.disabled = false; btn.textContent = 'Nouvelle analyse';
 }
 
 function copyAndInvite() {
@@ -4040,24 +4035,22 @@ async function sendCoachMessage() {
   if (!text || S.coachAnalysing) return;
   input.value = '';
   S.coachAnalysing = true;
+  const sendBtn = document.getElementById('coach-send-btn');
+  if (sendBtn) sendBtn.disabled = true;
 
   S.coachMessages.push({role:'user', content: text});
   renderCoachMessages(S.coachMessages);
   addTypingIndicator();
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: COACH_SYSTEM,
-        messages: S.coachMessages
-      })
+    const result = await api({
+      action: 'callClaude',
+      messages: JSON.stringify(S.coachMessages),
+      system: COACH_SYSTEM,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2000
     });
-    const result = await response.json();
-    const assistantText = result.content?.[0]?.text || 'Erreur.';
+    const assistantText = result.text || 'Erreur.';
     S.coachMessages.push({role:'assistant', content: assistantText});
     removeTypingIndicator();
     renderCoachMessages(S.coachMessages);
@@ -4070,12 +4063,14 @@ async function sendCoachMessage() {
         document.getElementById('coach-plan-wrap').style.display = 'block';
       } catch(e) {}
     }
+    saveCache();
   } catch(e) {
     removeTypingIndicator();
-    S.coachMessages.push({role:'assistant', content:'Erreur de connexion.'});
+    S.coachMessages.push({role:'assistant', content:'❌ ' + (e.message || 'Erreur de connexion.')});
     renderCoachMessages(S.coachMessages);
   }
   S.coachAnalysing = false;
+  if (sendBtn) sendBtn.disabled = false;
 }
 
 function renderCoachPlan(plan) {
