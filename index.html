@@ -1036,6 +1036,14 @@ async function api(params) {
   return res.json();
 }
 
+async function apiPost(params) {
+  const res = await fetch(API, {
+    method: 'POST',
+    body: JSON.stringify(params)
+  });
+  return res.json();
+}
+
 // ── CACHE ──────────────────────────────────────────────────────
 function saveCache() {
   try {
@@ -3944,7 +3952,7 @@ async function startCoachSession() {
   addTypingIndicator();
 
   try {
-    var result = await api({
+    var result = await apiPost({
       action: 'callClaude',
       messages: JSON.stringify(S.coachMessages),
       system: COACH_SYSTEM,
@@ -4043,7 +4051,7 @@ async function sendCoachMessage() {
   addTypingIndicator();
 
   try {
-    const result = await api({
+    const result = await apiPost({
       action: 'callClaude',
       messages: JSON.stringify(S.coachMessages),
       system: COACH_SYSTEM,
