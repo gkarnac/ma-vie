@@ -4175,6 +4175,18 @@ function parseDurToSecs(d) {
   return 60;
 }
 
+const COOLDOWN_WC = [
+  _E("Étirements doux","Étirements doux. Relâche les tensions, respiration lente.","Mobilité douce — relâche progressivement",120,"Cooldown"),
+  _R(10),
+  _E("Torsion allongée — gauche","Torsion allongée côté gauche. Genou gauche basculé, bras en croix, regard vers la droite. Laisse la gravité travailler.","Genou gauche basculé — bras en croix",30,"Cooldown"),
+  _R(5),
+  _E("Torsion allongée — droite","Torsion allongée côté droit. Même chose à droite.","Même chose à droite",30,"Cooldown"),
+  _R(5),
+  _E("Ischio-jambiers","Ischio-jambiers. Sur le dos, jambe tendue, mains derrière la cuisse. Gauche puis droite.","Sur le dos — jambe tendue, mains derrière la cuisse",45,"Cooldown"),
+  _R(5),
+  _E("Shavasana","Shavasana. Allonge-toi complètement, paumes vers le haut. Relâche chaque partie du corps. Bravo pour cette séance.","Allongé — paumes vers le haut, relâche complet",90,"Cooldown"),
+];
+
 function logToTimer(log) {
   if (!log || !log.length) return [];
   const result = [...PHYSIO_BASE, _R(20)];
@@ -4188,6 +4200,7 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
+  result.push(...COOLDOWN_WC);
   return result;
 }
 
