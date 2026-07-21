@@ -4176,15 +4176,27 @@ function parseDurToSecs(d) {
 }
 
 const COOLDOWN_WC = [
-  _E("Étirements doux","Étirements doux. Relâche les tensions, respiration lente.","Mobilité douce — relâche progressivement",120,"Cooldown"),
+  _E("Low lunge — gauche","Low lunge côté gauche. Pied gauche devant, genou à 90 degrés, genou droit au sol. Enfonce doucement la hanche vers le sol. Psoas qui s'ouvre. Trente secondes.","Pied gauche devant — hanche vers le sol, psoas étiré",30,"Cooldown"),
+  _R(5),
+  _E("Low lunge — droite","Même chose à droite. Pied droit devant, genou gauche au sol. Hanche vers le sol.","Pied droit devant — hanche vers le sol",30,"Cooldown"),
   _R(10),
-  _E("Torsion allongée — gauche","Torsion allongée côté gauche. Genou gauche basculé, bras en croix, regard vers la droite. Laisse la gravité travailler.","Genou gauche basculé — bras en croix",30,"Cooldown"),
+  _E("Descente latérale — gauche","Descente latérale gauche. Genou droit fléchi, jambe gauche tendue sur le côté, orteils vers le plafond. Enfonce progressivement. Ouvre l'aine. Trente secondes.","Jambe gauche tendue — ouvre l'aine",30,"Cooldown"),
   _R(5),
-  _E("Torsion allongée — droite","Torsion allongée côté droit. Même chose à droite.","Même chose à droite",30,"Cooldown"),
+  _E("Descente latérale — droite","Descente latérale droite. Genou gauche fléchi, jambe droite tendue sur le côté.","Jambe droite tendue — ouvre l'aine droite",30,"Cooldown"),
+  _R(10),
+  _E("Cavalier bas — hanches ouvertes","Position cavalier large et basse. Pieds parallèles, genoux au-dessus des orteils, hanches qui descendent. Respiration lente. Trente secondes.","Cavalier large et bas — hanches qui descendent",30,"Cooldown"),
+  _R(10),
+  _E("Ischio — jambe gauche","Jambe gauche tendue devant, talon au sol, orteils vers toi. Penche le tronc depuis la hanche, dos droit. Arrière de la cuisse qui tire. Trente secondes.","Jambe gauche tendue — dos droit, penche depuis la hanche",30,"Cooldown"),
   _R(5),
-  _E("Ischio-jambiers","Ischio-jambiers. Sur le dos, jambe tendue, mains derrière la cuisse. Gauche puis droite.","Sur le dos — jambe tendue, mains derrière la cuisse",45,"Cooldown"),
+  _E("Ischio — jambe droite","Même chose à droite. Jambe droite tendue, tronc vers l'avant.","Jambe droite tendue — dos droit",30,"Cooldown"),
   _R(5),
-  _E("Shavasana","Shavasana. Allonge-toi complètement, paumes vers le haut. Relâche chaque partie du corps. Bravo pour cette séance.","Allongé — paumes vers le haut, relâche complet",90,"Cooldown"),
+  _E("Pince large","Pieds écartés, jambes tendues. Corps vers le sol. Laisse la gravité travailler. Trente secondes.","Pieds écartés — laisse la gravité travailler",30,"Cooldown"),
+  _R(10),
+  _E("Torsion allongée — gauche","Sur le dos. Genou gauche vers la poitrine, bascule-le vers la droite. Bras en croix, regard à gauche. Laisse le genou descendre vers le sol. Trente secondes.","Genou gauche vers la droite — épaule gauche au sol",30,"Cooldown"),
+  _R(5),
+  _E("Torsion allongée — droite","Genou droit vers la gauche, regard à droite. Trente secondes.","Genou droit vers la gauche — épaule droite au sol",30,"Cooldown"),
+  _R(10),
+  _E("Shavasana","Shavasana. Allonge-toi sur le dos, bras légèrement écartés, paumes vers le haut. Ferme les yeux. Relâche les pieds, les jambes, les hanches, le ventre, les épaules, la nuque. Respiration naturelle. Bravo pour cette séance.","Allongé — paumes vers le haut, relâche complet",90,"Cooldown"),
 ];
 
 function logToTimer(log) {
