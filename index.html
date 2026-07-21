@@ -939,29 +939,6 @@ function noSleepStop() {
 
 // ── AUDIO ──────────────────────────────────────────────────────
 let audioCtx = null;
-let warmupAudio = null;
-
-function getWarmupAudio() {
-  if (!warmupAudio) {
-    warmupAudio = new Audio('./warmup.mp3');
-    warmupAudio.preload = 'auto';
-  }
-  return warmupAudio;
-}
-
-function startWarmupAudio() {
-  const audio = getWarmupAudio();
-  audio.currentTime = 0;
-  audio.play().catch(e => console.log('Warmup audio:', e));
-}
-
-function stopWarmupAudio() {
-  if (warmupAudio) {
-    warmupAudio.pause();
-    warmupAudio.currentTime = 0;
-  }
-}
-
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
@@ -2781,7 +2758,10 @@ function stbTickOnce() {
   if (!S.seanceSpoken) {
     S.seanceSpoken = true;
     const ex = S.seanceExercises[S.seanceIdx];
-    if (ex && !ex.isRest && ex.speak) setTimeout(() => speak(ex.speak), 300);
+    // Pendant l'échauffement, le MP3 narre — pas de TTS en double
+    if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
+      setTimeout(() => speak(ex.speak), 300);
+    }
   }
   S.seanceVal--;
   if (S.seanceVal <= 0) {
@@ -2824,11 +2804,6 @@ function stbToggle() {
     noSleepStart(); // fallback iOS
     S.seanceSpoken = false;
     S.seanceTickBase = Date.now(); // horodatage de référence
-    // Lancer le MP3 de narration si on est dans le warmup (1er exercice = échauffement)
-    const firstEx = S.seanceExercises[S.seanceIdx];
-    if (firstEx && firstEx.phase === 'Échauffement' && S.seanceIdx < 5) {
-      startWarmupAudio();
-    }
     S.seanceInterval = setInterval(stbTick, 500); // polling 2×/sec pour réactivité
   } else {
     clearInterval(S.seanceInterval);
@@ -2836,7 +2811,6 @@ function stbToggle() {
     releaseWakeLock();
     noSleepStop();
     window.speechSynthesis.cancel();
-    stopWarmupAudio();
   }
 }
 
@@ -2871,11 +2845,6 @@ function stbNext() {
     stbRender();
     // Auto-enchaîner tous les exercices — pas de bip pendant échauffement et cooldown
     if (ex.phase !== 'Échauffement' && ex.phase !== 'Cooldown') playAlarm();
-    // Arrêter le MP3 de warmup quand on sort de la phase échauffement
-    const prevEx = S.seanceExercises[S.seanceIdx - 1];
-    if (prevEx && prevEx.phase === 'Échauffement' && ex.phase !== 'Échauffement') {
-      stopWarmupAudio();
-    }
     const next = S.seanceExercises[S.seanceIdx + 1];
     if (ex.isRest) {
       if (next) setTimeout(() => speak('Pause. Prochain : ' + next.name), 400);
