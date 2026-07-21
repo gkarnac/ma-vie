@@ -1591,23 +1591,23 @@ const _R = (dur) => ({name:'Pause',speak:'',detail:'',duration:dur||20,isRest:tr
 // ── ÉCHAUFFEMENT COMPLET (haut + bas du corps) ────────────────
 const PHYSIO_BASE = [
   // ── 1. Mobilité cervicale ──
-  _E("Oui de la tête","Oui de la tête. Menton vers la poitrine et retour. Amplitude douce, cinq fois.","Menton vers poitrine — amplitude douce",10,"Échauffement"),
-  _E("Non de la tête","Non de la tête. Rotation gauche-droite, regard à hauteur d'épaule seulement. Cinq fois.","Gauche-droite — regard à hauteur d'épaule",10,"Échauffement"),
+  _E("Oui de la tête","","Menton vers poitrine — amplitude douce",10,"Échauffement"),
+  _E("Non de la tête","","Gauche-droite — regard à hauteur d'épaule",10,"Échauffement"),
   // ── 2. Épaules et bras ──
-  _E("Rotations épaules vers l'avant","Rotations des épaules vers l'avant. Grands cercles, omoplate bien engagée. Cinq fois.","Grands cercles — omoplate engagée",10,"Échauffement"),
-  _E("Rotations épaules vers l'arrière","Rotations des épaules vers l'arrière. Ouvre la poitrine à chaque passage arrière. Cinq fois.","Ouvre la poitrine à chaque passage arrière",10,"Échauffement"),
-  _E("Grande rotation bras — arrière","Grande rotation des bras vers l'arrière. Bras tendus, amplitude maximale. Cinq fois.","Bras tendus — amplitude maximale",10,"Échauffement"),
-  _E("Moyenne rotation bras — arrière","Moyenne rotation des bras vers l'arrière. Amplitude réduite. Cinq fois.","Amplitude réduite",7,"Échauffement"),
-  _E("Petite rotation bras — arrière","Petite rotation des bras vers l'arrière. Cercles serrés près du corps. Cinq fois.","Cercles serrés près du corps",5,"Échauffement"),
-  _E("Petite rotation bras — avant","Petite rotation des bras vers l'avant. Cinq fois.","Cercles serrés vers l'avant",5,"Échauffement"),
-  _E("Moyenne rotation bras — avant","Moyenne rotation des bras vers l'avant. Cinq fois.","Amplitude moyenne vers l'avant",7,"Échauffement"),
-  _E("Grande rotation bras — avant","Grande rotation des bras vers l'avant. Bras tendus. Cinq fois.","Bras tendus — amplitude maximale vers l'avant",10,"Échauffement"),
+  _E("Rotations épaules vers l'avant","","Grands cercles — omoplate engagée",10,"Échauffement"),
+  _E("Rotations épaules vers l'arrière","","Ouvre la poitrine à chaque passage arrière",10,"Échauffement"),
+  _E("Grande rotation bras — arrière","","Bras tendus — amplitude maximale",10,"Échauffement"),
+  _E("Moyenne rotation bras — arrière","","Amplitude réduite",7,"Échauffement"),
+  _E("Petite rotation bras — arrière","","Cercles serrés près du corps",5,"Échauffement"),
+  _E("Petite rotation bras — avant","","Cercles serrés vers l'avant",5,"Échauffement"),
+  _E("Moyenne rotation bras — avant","","Amplitude moyenne vers l'avant",7,"Échauffement"),
+  _E("Grande rotation bras — avant","","Bras tendus — amplitude maximale vers l'avant",10,"Échauffement"),
   // ── 3. Avant-bras et poignets ──
-  _E("Rotation avant-bras gauche","Rotation avant-bras gauche en position cavalier large. Coude fixe, avant-bras tourne en cercle. Cinq fois.","Cavalier large — coude fixe, avant-bras tourne",10,"Échauffement"),
-  _E("Rotation avant-bras droite","Rotation avant-bras droite. Même chose à droite. Cinq fois.","Même chose à droite",10,"Échauffement"),
-  _E("Déplié bras vers l'avant alterné","Déplié bras vers l'avant en alterné. Extension devant, retour en garde. Cinq fois chaque.","Extension bras devant — retour en garde",10,"Échauffement"),
-  _E("Rotation poignets vers l'arrière","Rotation des poignets alternés vers l'arrière. Cinq fois chaque.","Poignets en alternance vers l'arrière",10,"Échauffement"),
-  _E("Rotation poignets vers l'avant","Rotation des poignets alternés vers l'avant. Cinq fois chaque.","Poignets en alternance vers l'avant",10,"Échauffement"),
+  _E("Rotation avant-bras gauche","","Cavalier large — coude fixe, avant-bras tourne",10,"Échauffement"),
+  _E("Rotation avant-bras droite","","Même chose à droite",10,"Échauffement"),
+  _E("Déplié bras vers l'avant alterné","","Extension bras devant — retour en garde",10,"Échauffement"),
+  _E("Rotation poignets vers l'arrière","","Poignets en alternance vers l'arrière",10,"Échauffement"),
+  _E("Rotation poignets vers l'avant","","Poignets en alternance vers l'avant",10,"Échauffement"),
   // ── 4. Hanches et jambes ──
   _E("Cavalier gauche — dos droit","Position cavalier gauche. Hanche gauche ouverte, dos bien vertical. Dix secondes.","Hanche gauche ouverte — dos vertical",10,"Échauffement"),
   _E("Cavalier gauche — plus bas","Cavalier gauche plus bas. Dos aligné avec la jambe arrière, descends progressivement. Dix secondes.","Descends progressivement — dos aligné",10,"Échauffement"),
@@ -1620,28 +1620,28 @@ const PHYSIO_BASE = [
   _E("Lunge droit","Lunge droit. Pied droit devant, genou à 90°, hanche vers le sol. Dix secondes.","Genou à 90° — hanche vers le sol",10,"Échauffement"),
   _E("Low lunge droit","Low lunge droit. Genou arrière au sol, psoas étiré, genou avant pousse vers l'avant. Dix secondes.","Genou arrière au sol — psoas étiré, genou avant pousse",10,"Échauffement"),
   // ── 5. Ischio-jambiers debout ──
-  _E("Balancement vers les pieds","Balancement corps gauche-droite vers les pieds. Pieds écartés, corps souple, bras suivent. Cinq fois.","Pieds écartés — corps souple, bras suivent",10,"Échauffement"),
-  _E("Cheville gauche — pince","Agrippe la cheville gauche. Pieds écartés, jambes tendues. Laisse le poids du corps agir. Dix secondes.","Cheville gauche — laisse le poids agir",10,"Échauffement"),
-  _E("Cheville droite — pince","Agrippe la cheville droite. Même position. Dix secondes.","Cheville droite — même chose",10,"Échauffement"),
-  _E("Pince large — deux chevilles","Pieds écartés, attrape les deux chevilles. Pince large, laisse la gravité travailler. Dix secondes.","Deux chevilles — pince large, gravité travaille",10,"Échauffement"),
-  _E("Ischio gauche — orteils","Jambe gauche tendue vers l'avant, talon au sol, orteils vers toi. Agrippe les orteils et maintiens. Dix secondes.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
-  _E("Ischio gauche — cheville","Dépose la plante du pied gauche. Agrippe la cheville et maintiens. Dix secondes.","Plante au sol — agrippe la cheville",10,"Échauffement"),
-  _E("Ischio droit — orteils","Jambe droite tendue vers l'avant, talon au sol, orteils vers toi. Agrippe les orteils et maintiens. Dix secondes.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
-  _E("Ischio droit — cheville","Dépose la plante du pied droit. Agrippe la cheville et maintiens. Dix secondes.","Plante au sol — agrippe la cheville",10,"Échauffement"),
+  _E("Balancement vers les pieds","Pieds écartés, corps souple, bras suivent.","Pieds écartés — corps souple, bras suivent",10,"Échauffement"),
+  _E("Cheville gauche — pince","Agrippe la cheville gauche. Pieds écartés, jambes tendues. Laisse le poids du corps agir.","Cheville gauche — laisse le poids agir",10,"Échauffement"),
+  _E("Cheville droite — pince","Agrippe la cheville droite.","Cheville droite — même chose",10,"Échauffement"),
+  _E("Pince large — deux chevilles","Pieds écartés, attrape les deux chevilles. Laisse la gravité travailler.","Deux chevilles — pince large, gravité travaille",10,"Échauffement"),
+  _E("Ischio gauche — orteils","Jambe gauche tendue, talon au sol, orteils vers toi. Agrippe les orteils.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
+  _E("Ischio gauche — cheville","Plante du pied gauche. Agrippe la cheville.","Plante au sol — agrippe la cheville",10,"Échauffement"),
+  _E("Ischio droit — orteils","Jambe droite tendue, talon au sol, orteils vers toi. Agrippe les orteils.","Talon au sol — orteils vers toi, agrippe",10,"Échauffement"),
+  _E("Ischio droit — cheville","Plante du pied droit. Agrippe la cheville.","Plante au sol — agrippe la cheville",10,"Échauffement"),
   // ── 6. Bas du corps ──
-  _E("Descente fesses-talons + pince","Enchaîne descente fesses vers talons et pince debout. Cinq fois en continu.","Descente fesses-talons puis pince — 5 fois",20,"Échauffement"),
+  _E("Descente fesses-talons + pince","Descente fesses vers talons, puis pince debout.","Descente fesses-talons puis pince — 5 fois",20,"Échauffement"),
   // ── 7. Hanches, flancs et cage thoracique ──
-  _E("Poussée hanches — gauche","Poussée des hanches vers l'avant à 45 degrés, côté gauche. Dix secondes.","Poussée hanches à 45° — côté gauche",10,"Échauffement"),
-  _E("Poussée hanches — droite","Poussée des hanches vers l'avant à 45 degrés, côté droit. Dix secondes.","Même chose à droite",10,"Échauffement"),
-  _E("Rotation hanches — gauche","Rotation des hanches vers la gauche. Grands cercles, genoux légèrement fléchis. Cinq fois.","Grands cercles — genoux légèrement fléchis",10,"Échauffement"),
-  _E("Rotation hanches — droite","Rotation des hanches vers la droite. Cinq fois.","Même chose à droite",10,"Échauffement"),
-  _E("Étirer flanc gauche","Étirer le flanc gauche. Bras gauche levé, inclinaison latérale gauche. Dix secondes.","Bras gauche levé — inclinaison latérale gauche",10,"Échauffement"),
-  _E("Étirer flanc droit","Étirer le flanc droit. Bras droit levé, inclinaison latérale droite. Dix secondes.","Bras droit levé — inclinaison latérale droite",10,"Échauffement"),
-  _E("Cage thoracique — bras gauche","Étirer la cage thoracique, bras gauche. Bras tendu de côté, rotation du torse. Dix secondes.","Bras gauche tendu — rotation du torse",10,"Échauffement"),
-  _E("Cage thoracique — bras droit","Étirer la cage thoracique, bras droit. Même chose à droite. Dix secondes.","Bras droit tendu — rotation du torse",10,"Échauffement"),
+  _E("Poussée hanches — gauche","Poussée des hanches à 45 degrés, côté gauche.","Poussée hanches à 45° — côté gauche",10,"Échauffement"),
+  _E("Poussée hanches — droite","Même chose à droite.","Même chose à droite",10,"Échauffement"),
+  _E("Rotation hanches — gauche","Rotation des hanches vers la gauche. Grands cercles.","Grands cercles — genoux légèrement fléchis",10,"Échauffement"),
+  _E("Rotation hanches — droite","Rotation des hanches vers la droite.","Même chose à droite",10,"Échauffement"),
+  _E("Étirer flanc gauche","Bras gauche levé, inclinaison latérale.","Bras gauche levé — inclinaison latérale gauche",10,"Échauffement"),
+  _E("Étirer flanc droit","Bras droit levé, inclinaison latérale.","Bras droit levé — inclinaison latérale droite",10,"Échauffement"),
+  _E("Cage thoracique — bras gauche","Bras gauche tendu de côté, rotation du torse.","Bras gauche tendu — rotation du torse",10,"Échauffement"),
+  _E("Cage thoracique — bras droit","Même chose à droite.","Bras droit tendu — rotation du torse",10,"Échauffement"),
   // ── 8. Rotation du tronc ──
-  _E("Rotation tronc — avant-bras","Rotation du tronc. Avant-bras balancent gauche-droite, bassin fixe. Dix fois.","Bassin fixe — épaules pivotent",10,"Échauffement"),
-  _E("Rotation tronc — coudes","Rotation du tronc avec coups de coude accentués. Accentue la rotation à chaque coude. Dix fois.","Coups de coude accentués — rotation complète",10,"Échauffement"),
+  _E("Rotation tronc — avant-bras","Avant-bras balancent, bassin fixe.","Bassin fixe — épaules pivotent",10,"Échauffement"),
+  _E("Rotation tronc — coudes","Accentue la rotation à chaque coude.","Coups de coude accentués — rotation complète",10,"Échauffement"),
 ];
 
 // RENFO_BASE, COOLDOWN et COIFFE_BASE supprimés — le programme vient maintenant du Sheet (feuille Programme).
@@ -2767,7 +2767,7 @@ function stbTickOnce() {
     return false; // signale "exercice terminé, arrêter la boucle"
   }
   const cur = S.seanceExercises[S.seanceIdx];
-  if (S.seanceVal <= 3 && cur && !cur.isRest) playCountdownBeep();
+  if (S.seanceVal <= 3 && cur && !cur.isRest && cur.phase !== 'Échauffement' && cur.phase !== 'Cooldown') playCountdownBeep();
   stbRender();
   return true; // continuer
 }
