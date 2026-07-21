@@ -4160,6 +4160,37 @@ function rejectPlan() {
 // Types d'habitudes trackés dans leurs propres onglets — exclus des engagements du planificateur
 const TYPES_EXCLUS_PLANIF = ['wingchun', 'artistique'];
 
+
+// ── CONVERSION LOG → TIMER ─────────────────────────────────────
+function parseDurToSecs(d) {
+  if (!d) return 60;
+  const s = String(d).toLowerCase();
+  const m = s.match(/(\d+)\s*min/);
+  if (m) return parseInt(m[1]) * 60;
+  const sec = s.match(/(\d+)\s*sec/);
+  if (sec) return Math.max(20, parseInt(sec[1]) * 2);
+  const rep = s.match(/(\d+)\s*rep/);
+  if (rep) return Math.max(30, parseInt(rep[1]) * 4);
+  if (s.includes('g+d') || s.includes('chaque')) return 90;
+  return 60;
+}
+
+function logToTimer(log) {
+  if (!log || !log.length) return [];
+  const result = [...PHYSIO_BASE, _R(20)];
+  log.forEach(function(ex) {
+    const secs = parseDurToSecs(ex.d);
+    const sets = Math.max(1, parseInt(ex.s) || 1);
+    for (let s = 1; s <= sets; s++) {
+      const label = sets > 1 ? ex.n + ' — série ' + s : ex.n;
+      result.push(_E(label, label + '.', String(ex.d || ''), secs, 'Wing Chun'));
+      if (s < sets) result.push(_R(20));
+    }
+    result.push(_R(20));
+  });
+  return result;
+}
+
 async function acceptPlan() {
   if (!S.coachPlan) return;
   const btn = document.getElementById('coach-accept-btn');
@@ -4221,7 +4252,11 @@ async function _acceptPlanInner(btn) {
       if (!patch) continue;
       // Patcher : on garde label/color, on écrase type/timer/log si fournis
       if (patch.type) base[i].type = patch.type;
-      if (Array.isArray(patch.timer)) base[i].timer = patch.timer;
+      if (Array.isArray(patch.timer)) {
+        base[i].timer = patch.timer;
+      } else if (Array.isArray(patch.log) && patch.log.length) {
+        base[i].timer = logToTimer(patch.log);
+      }
       if (Array.isArray(patch.log)) base[i].log = patch.log;
       weeklyChanged++;
     }
