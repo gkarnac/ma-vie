@@ -673,9 +673,19 @@ textarea{resize:vertical;min-height:68px}
     </div>
   </div>
 
+  <!-- Zone permanente pour coller le PLAN_JSON -->
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+    <p class="slabel" style="margin-bottom:10px">Coller le plan de Claude</p>
+    <textarea id="plan-import-txt"
+      style="width:100%;height:120px;font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rad);color:var(--txt);padding:10px;letter-spacing:.3px;resize:vertical"
+      placeholder="Colle ici le bloc PLAN_JSON généré par Claude..."></textarea>
+    <button class="btn" style="margin-top:8px" onclick="importCoachPlan()">Appliquer le plan ✓</button>
+  </div>
+
+  <!-- Chat désactivé — gardé pour compatibilité mais caché -->
   <div class="coach-input-wrap" id="coach-input-wrap" style="display:none">
-    <input class="coach-input" id="coach-input" placeholder="Réponds à Claude, propose un changement..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoachMessage()}">
-    <button class="coach-send" onclick="sendCoachMessage()" id="coach-send-btn">↑</button>
+    <input class="coach-input" id="coach-input" placeholder="" onkeydown="">
+    <button class="coach-send" id="coach-send-btn">↑</button>
   </div>
 </div>
 
@@ -3488,7 +3498,7 @@ function initCoachPage() {
     renderCoachMessages([]);
   } else {
     renderCoachMessages(S.coachMessages);
-    document.getElementById('coach-input-wrap').style.display = 'flex';
+    // chat désactivé
   }
 }
 
@@ -4038,6 +4048,7 @@ function importCoachPlan() {
 }
 
 async function sendCoachMessage() {
+  return; // Chat direct désactivé
   const input = document.getElementById('coach-input');
   const text = input.value.trim();
   if (!text || S.coachAnalysing) return;
@@ -4143,11 +4154,7 @@ function renderCoachPlan(plan) {
 
 function rejectPlan() {
   document.getElementById('coach-plan-wrap').style.display = 'none';
-  document.getElementById('coach-input').focus();
-  const container = document.getElementById('coach-messages');
-  // Ajouter un message d'invitation à modifier
-  S.coachMessages.push({role:'assistant', content:"Bien sûr, qu'est-ce que tu voudrais changer dans ce plan ?"});
-  renderCoachMessages(S.coachMessages);
+  startCoachSession();
 }
 
 // Types d'habitudes trackés dans leurs propres onglets — exclus des engagements du planificateur
