@@ -2840,8 +2840,8 @@ function stbNext() {
     const ex = S.seanceExercises[S.seanceIdx];
     S.seanceVal = ex.duration;
     stbRender();
-    // Auto-enchaîner tous les exercices (pauses et exercices normaux)
-    playAlarm();
+    // Auto-enchaîner tous les exercices — pas de bip pendant échauffement et cooldown
+    if (ex.phase !== 'Échauffement' && ex.phase !== 'Cooldown') playAlarm();
     const next = S.seanceExercises[S.seanceIdx + 1];
     if (ex.isRest) {
       if (next) setTimeout(() => speak('Pause. Prochain : ' + next.name), 400);
