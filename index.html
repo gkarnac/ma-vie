@@ -4367,31 +4367,16 @@ function logToTimer(log) {
     isRest: false,
     isSingleWarmup: true
   }];
-  // Groupes d'exercices de force par jour — un seul MP3
-  const FORCE_GROUPES = {
-    'mardi': {
-      exercices: ['horizontal pull', 'knee tuck'],
-      fichier: 'mardi-force.mp3'
-    },
-    'jeudi': {
-      exercices: ['push up', 'full squat', 'élévation'],
-      fichier: 'jeudi-force.mp3'
-    }
+  // Association exercice → MP3 individuel
+  const EXERCICE_AUDIOS = {
+    'horizontal pull': 'tirage-horizontal.mp3',
+    'knee tuck':       'knee-tucks.mp3',
+    'push up':         'push-ups.mp3',
+    'full squat':      'full-squat.mp3',
+    'élévation':       'elevations-wc.mp3'
   };
 
-  function detecterGroupeForce(logItems) {
-    for (const [jour, groupe] of Object.entries(FORCE_GROUPES)) {
-      const noms = logItems.map(function(e) { return (e.n || '').toLowerCase(); });
-      const match = groupe.exercices.every(function(mot) {
-        return noms.some(function(n) { return n.includes(mot); });
-      });
-      if (match) return groupe;
-    }
-    return null;
-  }
-
-  const groupe = detecterGroupeForce(log);
-  let forceInjecte = false;
+  const injectedAudios = new Set();
 
   log.forEach(function(ex) {
     const nomLower = (ex.n || '').toLowerCase();
@@ -4411,16 +4396,20 @@ function logToTimer(log) {
       return;
     }
 
-    // Exercices de force — un seul bloc MP3 pour le groupe
-    if (groupe && groupe.exercices.some(function(mot) { return nomLower.includes(mot); })) {
-      if (!forceInjecte) {
-        forceInjecte = true;
+    // Exercice avec MP3 dédié
+    const audioEntry = Object.entries(EXERCICE_AUDIOS).find(function(e) {
+      return nomLower.includes(e[0]);
+    });
+    if (audioEntry) {
+      const fichier = audioEntry[1];
+      if (!injectedAudios.has(fichier)) {
+        injectedAudios.add(fichier);
         result.push({
-          name: 'Exercices de force',
+          name: ex.n,
           speak: '', detail: 'Narration vocale en cours...',
           duration: 600, phase: 'Wing Chun',
           isRest: false, isForce: true,
-          forceFichier: groupe.fichier
+          forceFichier: fichier
         });
         result.push(_R(5));
       }
