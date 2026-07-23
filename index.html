@@ -2908,6 +2908,10 @@ function stbNext() {
   clearInterval(S.seanceInterval);
   S.seanceRunning = false;
   S.seanceSpoken = false;
+  // Arrêter les MP3 guidés si on quitte un bloc narré
+  const leavingEx = S.seanceExercises[S.seanceIdx];
+  if (leavingEx && leavingEx.isKicks) stopKicksAudio();
+  if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
   if (S.seanceIdx < S.seanceExercises.length - 1) {
     S.seanceIdx++;
     const ex = S.seanceExercises[S.seanceIdx];
