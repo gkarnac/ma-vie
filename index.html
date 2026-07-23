@@ -1007,7 +1007,7 @@ function startWarmupAudio() {
 }
 
 function stopWarmupAudio() {
-  if (warmupAudio) { warmupAudio.pause(); warmupAudio.currentTime = 0; }
+  if (warmupAudio) { warmupAudio.onended = null; warmupAudio.onerror = null; warmupAudio.pause(); warmupAudio.currentTime = 0; }
   S.warmupAudioPlaying = false;
 }
 
@@ -1037,7 +1037,7 @@ function startKicksAudio() {
 }
 
 function stopKicksAudio() {
-  if (kicksAudio) { kicksAudio.pause(); kicksAudio.currentTime = 0; }
+  if (kicksAudio) { kicksAudio.onended = null; kicksAudio.onerror = null; kicksAudio.pause(); kicksAudio.currentTime = 0; }
   S.kicksAudioPlaying = false;
 }
 
@@ -1068,7 +1068,7 @@ function startForceAudio(filename) {
 }
 
 function stopForceAudio() {
-  if (forceAudio) { forceAudio.pause(); forceAudio.currentTime = 0; }
+  if (forceAudio) { forceAudio.onended = null; forceAudio.onerror = null; forceAudio.pause(); forceAudio.currentTime = 0; }
   S.forceAudioPlaying = false;
 }
 
@@ -2982,6 +2982,10 @@ function stbNext() {
   clearInterval(S.seanceInterval);
   S.seanceRunning = false;
   S.seanceSpoken = false;
+  const leavingEx = S.seanceExercises[S.seanceIdx];
+  if (leavingEx && leavingEx.isKicks) stopKicksAudio();
+  if (leavingEx && leavingEx.isForce) stopForceAudio();
+  if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
   if (S.seanceIdx < S.seanceExercises.length - 1) {
     S.seanceIdx++;
     const ex = S.seanceExercises[S.seanceIdx];
@@ -4363,9 +4367,37 @@ function logToTimer(log) {
     isRest: false,
     isSingleWarmup: true
   }];
+  // Groupes d'exercices de force par jour — un seul MP3
+  const FORCE_GROUPES = {
+    'mardi': {
+      exercices: ['horizontal pull', 'knee tuck'],
+      fichier: 'mardi-force.mp3'
+    },
+    'jeudi': {
+      exercices: ['push up', 'full squat', 'élévation'],
+      fichier: 'jeudi-force.mp3'
+    }
+  };
+
+  function detecterGroupeForce(logItems) {
+    for (const [jour, groupe] of Object.entries(FORCE_GROUPES)) {
+      const noms = logItems.map(function(e) { return (e.n || '').toLowerCase(); });
+      const match = groupe.exercices.every(function(mot) {
+        return noms.some(function(n) { return n.includes(mot); });
+      });
+      if (match) return groupe;
+    }
+    return null;
+  }
+
+  const groupe = detecterGroupeForce(log);
+  let forceInjecte = false;
+
   log.forEach(function(ex) {
+    const nomLower = (ex.n || '').toLowerCase();
+
     // Kicks — bloc unique guidé par le MP3
-    if (ex.n && ex.n.toLowerCase().includes('kick')) {
+    if (nomLower.includes('kick')) {
       result.push({
         name: ex.n,
         speak: '',
@@ -4378,6 +4410,23 @@ function logToTimer(log) {
       result.push(_R(5));
       return;
     }
+
+    // Exercices de force — un seul bloc MP3 pour le groupe
+    if (groupe && groupe.exercices.some(function(mot) { return nomLower.includes(mot); })) {
+      if (!forceInjecte) {
+        forceInjecte = true;
+        result.push({
+          name: 'Exercices de force',
+          speak: '', detail: 'Narration vocale en cours...',
+          duration: 600, phase: 'Wing Chun',
+          isRest: false, isForce: true,
+          forceFichier: groupe.fichier
+        });
+        result.push(_R(5));
+      }
+      return;
+    }
+
     const secs = parseDurToSecs(ex.d);
     const sets = Math.max(1, parseInt(ex.s) || 1);
     for (let s = 1; s <= sets; s++) {
