@@ -874,7 +874,6 @@ const S = {
   wakeLock: null,
   warmupAudioPlaying: false,
   kicksAudioPlaying: false,
-  forceAudioPlaying: false,
   coachMessages: [],
   coachPlan: null,
   coachAnalysing: false,
@@ -1003,37 +1002,6 @@ function stopKicksAudio() {
   S.kicksAudioPlaying = false;
 }
 
-let forceAudio = null;
-
-function getForceAudio(filename) {
-  if (!forceAudio || forceAudio._src !== filename) {
-    forceAudio = new Audio('https://gkarnac.github.io/ma-vie/' + filename);
-    forceAudio._src = filename;
-    forceAudio.preload = 'auto';
-  }
-  return forceAudio;
-}
-
-function startForceAudio(filename) {
-  const audio = getForceAudio(filename);
-  audio.currentTime = 0;
-  S.forceAudioPlaying = true;
-  audio.onended = () => {
-    S.forceAudioPlaying = false;
-    if (S.seanceRunning) {
-      const cur = S.seanceExercises[S.seanceIdx];
-      if (cur && cur.isForce) stbNext();
-    }
-  };
-  audio.onerror = () => { S.forceAudioPlaying = false; };
-  audio.play().catch(e => { S.forceAudioPlaying = false; });
-}
-
-function stopForceAudio() {
-  if (forceAudio) { forceAudio.pause(); forceAudio.currentTime = 0; }
-  S.forceAudioPlaying = false;
-}
-
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
@@ -1079,7 +1047,7 @@ function playDoneBeep() {
 
 // ── TTS ────────────────────────────────────────────────────────
 function speak(text) {
-  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying) return;
+  if (S.warmupAudioPlaying || S.kicksAudioPlaying) return;
   if (!S.voiceEnabled || !text || !text.trim()) return;
   try {
     window.speechSynthesis.cancel();
@@ -2856,8 +2824,6 @@ function stbTickOnce() {
     const ex = S.seanceExercises[S.seanceIdx];
     if (ex && ex.isKicks) {
       startKicksAudio();
-    } else if (ex && ex.isForce) {
-      startForceAudio(ex.forceFichier);
     } else if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
       setTimeout(() => speak(ex.speak), 300);
     }
@@ -2915,7 +2881,6 @@ function stbToggle() {
     window.speechSynthesis.cancel();
     stopWarmupAudio();
     stopKicksAudio();
-    stopForceAudio();
   }
 }
 
@@ -4322,55 +4287,21 @@ function logToTimer(log) {
     isRest: false,
     isSingleWarmup: true
   }];
-  // Regrouper les exercices de force par paires pour un seul MP3
-  const FORCE_GROUPES = {
-    'mardi': {
-      exercices: ['horizontal pull', 'knee tuck'],
-      fichier: 'mardi-force.mp3'
-    }
-  };
-
-  // Détecter si le log contient une paire de force connue
-  function detecterGroupeForce(logItems) {
-    for (const [jour, groupe] of Object.entries(FORCE_GROUPES)) {
-      const noms = logItems.map(e => (e.n || '').toLowerCase());
-      const match = groupe.exercices.every(mot => noms.some(n => n.includes(mot)));
-      if (match) return groupe;
-    }
-    return null;
-  }
-
-  const groupe = detecterGroupeForce(log);
-  let forceInjecte = false;
-
   log.forEach(function(ex) {
-    const nomLower = (ex.n || '').toLowerCase();
-
-    // Kicks — bloc unique
-    if (nomLower.includes('kick')) {
+    // Kicks — bloc unique guidé par le MP3
+    if (ex.n && ex.n.toLowerCase().includes('kick')) {
       result.push({
-        name: ex.n, speak: '', detail: 'Narration vocale en cours...',
-        duration: 300, phase: 'Wing Chun', isRest: false, isKicks: true
+        name: ex.n,
+        speak: '',
+        detail: 'Narration vocale en cours...',
+        duration: 300,
+        phase: 'Wing Chun',
+        isRest: false,
+        isKicks: true
       });
       result.push(_R(5));
       return;
     }
-
-    // Exercices de force — un seul bloc MP3 pour le groupe
-    if (groupe && groupe.exercices.some(mot => nomLower.includes(mot))) {
-      if (!forceInjecte) {
-        forceInjecte = true;
-        result.push({
-          name: 'Exercices de force',
-          speak: '', detail: 'Narration vocale en cours...',
-          duration: 600, phase: 'Wing Chun', isRest: false,
-          isForce: true, forceFichier: groupe.fichier
-        });
-        result.push(_R(5));
-      }
-      return; // ignorer les autres exercices du groupe
-    }
-
     const secs = parseDurToSecs(ex.d);
     const sets = Math.max(1, parseInt(ex.s) || 1);
     for (let s = 1; s <= sets; s++) {
