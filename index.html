@@ -942,11 +942,50 @@ function noSleepStop() {
 // ── AUDIO ──────────────────────────────────────────────────────
 let audioCtx = null;
 let warmupAudio = null;
+const MP3_BASE = 'https://gkarnac.github.io/ma-vie/';
+const _blobCache = {}; // filename → objectURL
+
+async function preloadMp3(fichier) {
+  if (_blobCache[fichier]) return _blobCache[fichier];
+  try {
+    const resp = await fetch(MP3_BASE + fichier);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    _blobCache[fichier] = URL.createObjectURL(blob);
+    console.log('✓ Préchargé:', fichier);
+    return _blobCache[fichier];
+  } catch(e) {
+    console.warn('Préchargement échoué:', fichier, e.message);
+    return MP3_BASE + fichier; // fallback réseau
+  }
+}
+
+function flushMp3Cache() {
+  Object.values(_blobCache).forEach(url => {
+    try { URL.revokeObjectURL(url); } catch(e) {}
+  });
+  Object.keys(_blobCache).forEach(k => delete _blobCache[k]);
+  // Réinitialiser les objets Audio
+  warmupAudio = null;
+  kicksAudio = null;
+  forceAudio = null;
+  console.log('✓ Cache MP3 libéré');
+}
+
+async function preloadSeanceAudios(exercises) {
+  const needed = new Set();
+  exercises.forEach(ex => {
+    if (ex.phase === 'Échauffement') needed.add('warmup.mp3');
+    if (ex.isKicks) needed.add('kicks.mp3');
+    if (ex.isForce && ex.forceFichier) needed.add(ex.forceFichier);
+  });
+  await Promise.all([...needed].map(f => preloadMp3(f)));
+}
 
 function getWarmupAudio() {
   if (!warmupAudio) {
-    warmupAudio = new Audio('https://gkarnac.github.io/ma-vie/warmup.mp3');
-    warmupAudio.preload = 'auto';
+    const src = _blobCache['warmup.mp3'] || MP3_BASE + 'warmup.mp3';
+    warmupAudio = new Audio(src);
   }
   return warmupAudio;
 }
@@ -976,8 +1015,8 @@ let kicksAudio = null;
 
 function getKicksAudio() {
   if (!kicksAudio) {
-    kicksAudio = new Audio('https://gkarnac.github.io/ma-vie/kicks.mp3');
-    kicksAudio.preload = 'auto';
+    const src = _blobCache['kicks.mp3'] || MP3_BASE + 'kicks.mp3';
+    kicksAudio = new Audio(src);
   }
   return kicksAudio;
 }
@@ -1000,6 +1039,37 @@ function startKicksAudio() {
 function stopKicksAudio() {
   if (kicksAudio) { kicksAudio.pause(); kicksAudio.currentTime = 0; }
   S.kicksAudioPlaying = false;
+}
+
+let forceAudio = null;
+
+function getForceAudio(filename) {
+  if (!forceAudio || forceAudio._src !== filename) {
+    const src = _blobCache[filename] || MP3_BASE + filename;
+    forceAudio = new Audio(src);
+    forceAudio._src = filename;
+  }
+  return forceAudio;
+}
+
+function startForceAudio(filename) {
+  const audio = getForceAudio(filename);
+  audio.currentTime = 0;
+  S.forceAudioPlaying = true;
+  audio.onended = () => {
+    S.forceAudioPlaying = false;
+    if (S.seanceRunning) {
+      const cur = S.seanceExercises[S.seanceIdx];
+      if (cur && cur.isForce) stbNext();
+    }
+  };
+  audio.onerror = () => { S.forceAudioPlaying = false; };
+  audio.play().catch(e => { S.forceAudioPlaying = false; });
+}
+
+function stopForceAudio() {
+  if (forceAudio) { forceAudio.pause(); forceAudio.currentTime = 0; }
+  S.forceAudioPlaying = false;
 }
 
 function getAudioCtx() {
@@ -1047,7 +1117,7 @@ function playDoneBeep() {
 
 // ── TTS ────────────────────────────────────────────────────────
 function speak(text) {
-  if (S.warmupAudioPlaying || S.kicksAudioPlaying) return;
+  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying) return;
   if (!S.voiceEnabled || !text || !text.trim()) return;
   try {
     window.speechSynthesis.cancel();
@@ -2799,6 +2869,8 @@ function selectSeanceDay(idx) {
   S.seanceExercises = enrichTimerFromBanque(w.timer);
   S.seanceIdx = 0;
   S.seanceVal = (w.timer[0] && w.timer[0].duration) || 60;
+  // Précharger les MP3 de la séance en arrière-plan
+  preloadSeanceAudios(S.seanceExercises).catch(e => {});
   S.seanceRunning = false;
   S.seanceSpoken = false;
   clearInterval(S.seanceInterval);
@@ -2824,6 +2896,8 @@ function stbTickOnce() {
     const ex = S.seanceExercises[S.seanceIdx];
     if (ex && ex.isKicks) {
       startKicksAudio();
+    } else if (ex && ex.isForce) {
+      startForceAudio(ex.forceFichier);
     } else if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
       setTimeout(() => speak(ex.speak), 300);
     }
@@ -2908,10 +2982,6 @@ function stbNext() {
   clearInterval(S.seanceInterval);
   S.seanceRunning = false;
   S.seanceSpoken = false;
-  // Arrêter les MP3 guidés si on quitte un bloc narré
-  const leavingEx = S.seanceExercises[S.seanceIdx];
-  if (leavingEx && leavingEx.isKicks) stopKicksAudio();
-  if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
   if (S.seanceIdx < S.seanceExercises.length - 1) {
     S.seanceIdx++;
     const ex = S.seanceExercises[S.seanceIdx];
@@ -3113,6 +3183,8 @@ async function saveSeanceComplete() {
   saveCache();
   try { await api({action:'saveWcSeance', data: JSON.stringify(seance)}); } catch(e) {}
   toast('Séance enregistrée ✓');
+  // Libérer les MP3 en mémoire
+  flushMp3Cache();
   // Ouvrir le popup post-séance (RPE sera capturé là)
   S.postTimerSeanceId = seanceId;
   openPostTimerModal({habitude_nom: w.type, duree_prevue: totalMin});
