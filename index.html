@@ -4357,12 +4357,19 @@ const COOLDOWN_WC = [
 
 function logToTimer(log) {
   if (!log || !log.length) return [];
-  // Un seul compteur pour tout le warmup — le MP3 narre, la transition se fait à la fin du MP3
-  const result = [{
+
+  // Détecter si c'est une séance souplesse/yoga — pas d'échauffement Wing Chun
+  const MOTS_SOUPLESSE = ['étirement', 'souplesse', 'yoga', 'stretch'];
+  const estSouplesse = log.every(function(ex) {
+    const n = (ex.n || '').toLowerCase();
+    return MOTS_SOUPLESSE.some(function(mot) { return n.includes(mot); });
+  });
+
+  const result = estSouplesse ? [] : [{
     name: 'Échauffement',
     speak: '',
     detail: 'Narration vocale en cours...',
-    duration: 600, // 10 min max — le MP3 déclenche la transition réelle
+    duration: 600,
     phase: 'Échauffement',
     isRest: false,
     isSingleWarmup: true
