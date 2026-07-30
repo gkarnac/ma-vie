@@ -994,12 +994,31 @@ function startWarmupAudio() {
   const audio = getWarmupAudio();
   audio.currentTime = 0;
   S.warmupAudioPlaying = true;
+  S.warmupStartTime = Date.now();
   audio.onended = () => {
+    // Vérifier que le MP3 a vraiment joué au moins 60 secondes
+    // pour éviter les faux ended causés par des interruptions
+    const elapsed = (Date.now() - S.warmupStartTime) / 1000;
+    if (elapsed < 60) {
+      // Interruption prématurée — relancer
+      console.log('Warmup interrompu après', elapsed, 's — relance');
+      audio.play().catch(e => { S.warmupAudioPlaying = false; });
+      return;
+    }
     S.warmupAudioPlaying = false;
-    // Passer automatiquement au premier exercice Wing Chun
     if (S.seanceRunning) {
       const cur = S.seanceExercises[S.seanceIdx];
       if (cur && cur.phase === 'Échauffement') stbNext();
+    }
+  };
+  audio.onpause = () => {
+    // Auto-reprise si pause non intentionnelle pendant la séance
+    if (S.warmupAudioPlaying && S.seanceRunning) {
+      setTimeout(() => {
+        if (S.warmupAudioPlaying && S.seanceRunning && audio.paused) {
+          audio.play().catch(() => {});
+        }
+      }, 800);
     }
   };
   audio.onerror = () => { S.warmupAudioPlaying = false; };
@@ -1030,6 +1049,15 @@ function startKicksAudio() {
     if (S.seanceRunning) {
       const cur = S.seanceExercises[S.seanceIdx];
       if (cur && cur.isKicks) stbNext();
+    }
+  };
+  audio.onpause = () => {
+    if (S.kicksAudioPlaying && S.seanceRunning) {
+      setTimeout(() => {
+        if (S.kicksAudioPlaying && S.seanceRunning && audio.paused) {
+          audio.play().catch(() => {});
+        }
+      }, 800);
     }
   };
   audio.onerror = () => { S.kicksAudioPlaying = false; };
@@ -4357,19 +4385,12 @@ const COOLDOWN_WC = [
 
 function logToTimer(log) {
   if (!log || !log.length) return [];
-
-  // Détecter si c'est une séance souplesse/yoga — pas d'échauffement Wing Chun
-  const MOTS_SOUPLESSE = ['étirement', 'souplesse', 'yoga', 'stretch'];
-  const estSouplesse = log.every(function(ex) {
-    const n = (ex.n || '').toLowerCase();
-    return MOTS_SOUPLESSE.some(function(mot) { return n.includes(mot); });
-  });
-
-  const result = estSouplesse ? [] : [{
+  // Un seul compteur pour tout le warmup — le MP3 narre, la transition se fait à la fin du MP3
+  const result = [{
     name: 'Échauffement',
     speak: '',
     detail: 'Narration vocale en cours...',
-    duration: 600,
+    duration: 600, // 10 min max — le MP3 déclenche la transition réelle
     phase: 'Échauffement',
     isRest: false,
     isSingleWarmup: true
