@@ -4043,138 +4043,48 @@ async function startCoachSession() {
   var corrEntries = Object.entries(data.correlationsExercice);
   if (corrEntries.length) {
     corrEntries.forEach(function(e) { lines.push('- ' + e[0] + ' → ' + e[1] + '/10'); });
-  } else {
-    lines.push('- Pas assez de données encore');
-  }
+  } else { lines.push('- Pas assez de données encore'); }
   lines.push('');
   lines.push('SESSIONS COMPLÉTÉES :');
   var sessEntries = Object.entries(data.sessionsSemaine);
   if (sessEntries.length) {
     sessEntries.forEach(function(e) { lines.push('- ' + e[0] + ' : ' + e[1].count + ' session(s), ' + Math.round(e[1].totalMin) + ' min'); });
-  } else {
-    lines.push('- Aucune session enregistrée');
-  }
+  } else { lines.push('- Aucune session enregistrée'); }
   lines.push('');
-
-  // ═══ SÉANCES WEEKLY (Wing Chun / physio) ═══
-  lines.push('SÉANCES WEEKLY COMPLÉTÉES (RPE + drapeaux douleur) :');
+  lines.push('SÉANCES WEEKLY COMPLÉTÉES :');
   var seResume = Object.entries(data.seancesResume || {});
   if (seResume.length) {
     seResume.forEach(function(e) {
-      lines.push('- ' + e[0] + ' : ' + e[1].count + ' séance(s), RPE moy. ' + e[1].rpe_moyen + '/10, ' + e[1].duree_totale + ' min, ' + e[1].drapeaux_douleur + ' drapeau(x) douleur');
+      lines.push('- ' + e[0] + ' : ' + e[1].count + ' séance(s), RPE moy. ' + e[1].rpe_moyen + '/10, ' + e[1].duree_totale + ' min');
     });
-  } else {
-    lines.push('- Aucune séance complétée');
-  }
+  } else { lines.push('- Aucune séance complétée'); }
   lines.push('');
-  lines.push('EXERCICES AVEC DRAPEAUX DOULEUR (fréquence) :');
-  var painy = Object.entries(data.painyExercises || {}).sort(function(a,b){return b[1]-a[1];});
-  if (painy.length) {
-    painy.forEach(function(e) { lines.push('- ' + e[0] + ' : ' + e[1] + ' fois'); });
-  } else {
-    lines.push('- Aucun drapeau sur les exercices');
-  }
-  lines.push('');
-  lines.push('5 DERNIÈRES SÉANCES :');
-  if ((data.lastSeances || []).length) {
-    data.lastSeances.forEach(function(s) {
-      lines.push(s.date + ' | ' + s.type + ' | RPE ' + s.rpe + ' | ' + s.duree + 'min' + (s.exercices_douleur.length ? ' | douleur: ' + s.exercices_douleur.join(', ') : ''));
-    });
-  } else {
-    lines.push('- Aucune séance récente');
-  }
-  lines.push('');
-  lines.push('WEEKLY ACTIVE' + (data.weeklyPatched ? ' (déjà patchée par un plan précédent)' : '') + ' :');
-  (data.weeklyActive || []).forEach(function(d) {
-    lines.push('- ' + d.jour + ' (' + d.type + ') : ' + (d.exercices_timer.slice(0,3).join(' · ') || 'repos') + (d.exercices_timer.length > 3 ? ' + ' + (d.exercices_timer.length - 3) + ' autres' : ''));
-  });
-  lines.push('');
-
   lines.push('BIÈRE : ' + data.biereNuits + ' soir(s), douleur moy. lendemain : ' + data.biereImpact + '/10');
   lines.push('');
   lines.push('7 DERNIÈRES ENTRÉES :');
   data.dernierEntrees.forEach(function(e) {
-    lines.push(e.date + ' | Douleur: ' + e.pain + '/10 | Ex: ' + (e.exercices||'aucun') + ' | Méds: ' + (e.meds||'aucun') + (e.notes ? ' | ' + e.notes : ''));
+    lines.push(e.date + ' | Douleur: ' + e.pain + '/10 | Ex: ' + (e.exercices||'aucun') + (e.notes ? ' | ' + e.notes : ''));
   });
-  lines.push('');
-  lines.push('PLAN SEMAINE EN COURS :');
-  if (data.planSemaineCourante.length) {
-    data.planSemaineCourante.forEach(function(p) {
-      lines.push(p.date + ' | ' + p.habitude + ' ' + p.duree + 'min | ' + (p.fait ? 'Complété' : 'Non fait'));
-    });
-  } else {
-    lines.push('- Aucun plan');
-  }
-
-  // ═══ DONNÉES GARMIN (si saisies) ═══
-  if (S.garminData) {
-    var g = S.garminData;
-    lines.push('');
-    lines.push('DONNÉES GARMIN (7 derniers jours) :');
-    if (g.fcRepos)  lines.push('- FC repos moyenne : ' + g.fcRepos + ' bpm');
-    if (g.fcStress) lines.push('- FC moyenne en stress élevé : ' + g.fcStress + ' bpm');
-    if (g.vo2max) {
-      var vo2cat = g.vo2max < 35 ? 'Mauvais' : g.vo2max < 42 ? 'Moyen' : g.vo2max < 50 ? 'Bon' : 'Excellent';
-      lines.push('- VO₂ max : ' + g.vo2max + ' ml/kg/min (' + vo2cat + ' pour homme 40-49 ans)');
-      // Zones cardio basées sur FC repos + FC max estimée
-      if (g.fcRepos) {
-        var fcMax = 220 - 45; // estimé pour ~45 ans, ajustable
-        var fcR = g.fcRepos;
-        var z2low  = Math.round(fcR + 0.60 * (fcMax - fcR));
-        var z2high = Math.round(fcR + 0.70 * (fcMax - fcR));
-        var z3low  = Math.round(fcR + 0.70 * (fcMax - fcR));
-        var z3high = Math.round(fcR + 0.80 * (fcMax - fcR));
-        lines.push('- Zones cardio estimées : Z2 (endurance) ' + z2low + '-' + z2high + ' bpm · Z3 (tempo) ' + z3low + '-' + z3high + ' bpm');
-      }
-    }
-  }
 
   var summary = lines.join('\n');
   S.coachSummary = summary;
 
-  // Réinitialiser la conversation et envoyer automatiquement au Coach
-  S.coachMessages = [];
-  var userPrompt = 'Voici mon résumé hebdomadaire. Analyse mes séances (RPE + drapeaux douleur), propose des ajustements au programme WEEKLY si nécessaire, et un plan d\'engagements pour la semaine prochaine.\n\n' + summary;
-  S.coachMessages.push({role: 'user', content: userPrompt});
-  renderCoachMessages(S.coachMessages);
-  document.getElementById('coach-input-wrap').style.display = 'flex';
-  document.getElementById('coach-plan-wrap').style.display = 'none';
-
-  var btn = document.getElementById('coach-start-btn');
-  btn.disabled = true; btn.textContent = 'Analyse en cours…';
-  S.coachAnalysing = true;
-  addTypingIndicator();
-
-  try {
-    var result = await apiPost({
-      action: 'callClaude',
-      messages: JSON.stringify(S.coachMessages),
-      system: COACH_SYSTEM,
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000
-    });
-    var assistantText = result.text || 'Erreur.';
-    S.coachMessages.push({role: 'assistant', content: assistantText});
-    removeTypingIndicator();
-    renderCoachMessages(S.coachMessages);
-
-    var planMatch = assistantText.match(/<PLAN>([\s\S]*?)<\/PLAN>/);
-    if (planMatch) {
-      try {
-        S.coachPlan = JSON.parse(planMatch[1].trim());
-        renderCoachPlan(S.coachPlan);
-        document.getElementById('coach-plan-wrap').style.display = 'block';
-      } catch(e2) {}
-    }
-    saveCache();
-  } catch(e) {
-    removeTypingIndicator();
-    S.coachMessages.push({role: 'assistant', content: '❌ ' + (e.message || 'Erreur de connexion au Coach.')});
-    renderCoachMessages(S.coachMessages);
-  }
-  S.coachAnalysing = false;
-  btn.disabled = false; btn.textContent = 'Nouvelle analyse';
+  var container = document.getElementById('coach-messages');
+  container.innerHTML =
+    '<div class="card" style="margin-bottom:12px">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--green)">✓ Résumé généré</div>' +
+      '<pre style="font-size:11px;color:var(--txt2);white-space:pre-wrap;line-height:1.5;max-height:200px;overflow-y:auto">' + summary + '</pre>' +
+      '<button class="btn" style="margin-top:12px" onclick="copyAndInvite()">Copier et ouvrir Claude ↗</button>' +
+    '</div>' +
+    '<div style="background:var(--bg3);border-radius:var(--rad-lg);padding:14px;font-size:13px;line-height:1.7;color:var(--txt2);margin-bottom:14px">' +
+      '<strong style="color:var(--txt)">Comment procéder :</strong><br>' +
+      '1. Clique "Copier et ouvrir Claude" ci-dessus<br>' +
+      '2. Colle dans la conversation Claude<br>' +
+      '3. Claude analyse et propose un plan<br>' +
+      '4. Colle le PLAN_JSON dans le champ ci-dessous' +
+    '</div>';
 }
+
 
 function copyAndInvite() {
   var template = 'PLAN_JSON\n' +
