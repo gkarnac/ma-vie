@@ -1897,52 +1897,13 @@ const WEEKLY = [
       _E("Récupération — 3 min","Ralentis progressivement. Marche tranquille trois minutes pour récupérer.","Marche lente — laisse la FC redescendre",180,"Cardio")],
     log:[{n:"Tapis roulant Z2",s:1,d:"20min"},{n:"Récupération",s:1,d:"3min"}]
   },
-  { // Dimanche — Yoga Iyengar Leçon 1
+  { // Dimanche — Yoga Iyengar narré par Aoede
     label:"Dimanche", type:"Yoga — Iyengar Leçon 1", color:"#888",
     timer:[
-      _E("Sukhasana + Parvatāsana","Sukhasana. Assieds-toi en tailleur, dos droit. Lève les bras en Parvatāsana, paumes jointes vers le plafond. Respiration lente.","Assis en tailleur — bras levés, paumes jointes",120,"Yoga"),
-      _R(10),
-      _E("Tādāsana","Tādāsana. Debout, pieds joints, poids bien réparti. Corps aligné, bras le long du corps.","Debout, pieds joints — corps aligné, ancré",30,"Yoga"),
-      _R(10),
-      _E("Urdhva Hastāsana","Urdhva Hastāsana. Depuis Tādāsana, lève les bras au-dessus de la tête, paumes face à face. Étire vers le haut.","Bras levés — étire la colonne vers le haut",30,"Yoga"),
-      _R(10),
-      _E("Vrksāsana — gauche","Vrksāsana côté gauche. Pied contre la cheville ou la cuisse, jamais contre le genou. Bras levés. Équilibre.","Pied contre cuisse — jamais contre le genou",30,"Yoga"),
-      _R(10),
-      _E("Vrksāsana — droite","Vrksāsana côté droit.","Même chose à droite",30,"Yoga"),
-      _R(10),
-      _E("Uttānāsana I","Uttānāsana. Flexion avant debout. Mains sur un meuble ou le sol. Relâche le dos.","Mains sur support si dos sensible — relâche",30,"Yoga"),
-      _R(10),
-      _E("Utthita Trikonāsana — gauche","Utthita Trikonāsana gauche. Pieds écartés, bras en croix. Incline vers la gauche, main sur le tibia, regard vers le haut.","Pieds écartés — bras en ligne verticale",30,"Yoga"),
-      _R(10),
-      _E("Utthita Trikonāsana — droite","Utthita Trikonāsana droite.","Même chose à droite",30,"Yoga"),
-      _R(10),
-      _E("Uttānāsana I — repos","Uttānāsana. Repos entre postures debout. Mains sur support.","Relâche entre les poses debout",20,"Yoga"),
-      _R(10),
-      _E("Utthita Pārśvakonāsana — gauche","Utthita Pārśvakonāsana gauche. Pied gauche à 90°, genou fléchi au-dessus de la cheville. Bras allongé au-dessus de l'oreille.","Genou au-dessus de la cheville — bras allongé",30,"Yoga"),
-      _R(10),
-      _E("Utthita Pārśvakonāsana — droite","Utthita Pārśvakonāsana droite.","Même chose à droite",30,"Yoga"),
-      _R(10),
-      _E("Uttānāsana I — repos","Uttānāsana. Repos. Mains sur support.","Repos — mains sur support",20,"Yoga"),
-      _R(10),
-      _E("Virabhadrāsana II — gauche","Virabhadrāsana II gauche. Genou gauche fléchi, bras en croix, regard vers la main gauche.","Genou fléchi — bras en croix, regard devant",30,"Yoga"),
-      _R(10),
-      _E("Virabhadrāsana II — droite","Virabhadrāsana II droite.","Même chose à droite",30,"Yoga"),
-      _R(10),
-      _E("Parśvottānāsana sur appui","Parśvottānāsana. Flexion avant sur jambe avant, mains sur un meuble. Dos plat.","Mains sur support — dos plat, étire les ischio",30,"Yoga"),
-      _R(10),
-      _E("Uttānāsana I — fin debout","Uttānāsana, mains sur appui. Fin des postures debout.","Relâche — fin des postures debout",30,"Yoga"),
-      _R(15),
-      _E("Sukhasana — transition","Sukhasana. Pause avant les inversions. Respiration calme.","Pause de transition — respiration calme",60,"Yoga"),
-      _R(15),
-      _E("Sālamba Sarvāngāsana","Sālamba Sarvāngāsana. Chandelle. Couvertures pliées sous les épaules. Monte les jambes, soutiens le dos. Si difficile, jambes au mur.","Couvertures sous épaules — ou jambes au mur si difficile",60,"Yoga"),
-      _R(15),
-      _E("Ardha Halāsana","Ardha Halāsana. Demi-charrue. Descends les jambes vers le sol derrière la tête. Soutiens le dos.","Jambes vers le sol — soutiens le dos",30,"Yoga"),
-      _R(15),
-      _E("Jambes pliées sur l'abdomen","Ramène les genoux vers la poitrine depuis la chandelle. Enroule doucement.","Genoux vers poitrine — décompresse la colonne",20,"Yoga"),
-      _R(15),
-      {name:"Shavasana",speak:"Shavasana. Allonge-toi complètement, paumes vers le haut. Relâche chaque partie du corps. Minimum cinq minutes. Bravo.",detail:"Allongé, paumes vers le haut — minimum 5 minutes",duration:300,isRest:true,phase:"Yoga"}
+      {name:"Yoga Iyengar — séance guidée", speak:'', detail:'Narration vocale Aoede en cours...', duration:1200, phase:'Yoga', isRest:false, isForce:true, forceFichier:'dimanche-yoga.mp3'},
+      {name:"Fin de séance", speak:'', detail:'Bonne journée.', duration:5, phase:'Yoga', isRest:true}
     ],
-    log:[{n:"Yoga Iyengar — Leçon 1",s:1,d:"~40min"}]
+    log:[{n:"Yoga Iyengar — Leçon 1",s:1,d:"~18min"}]
   }
 ];
 
@@ -4313,7 +4274,10 @@ function logToTimer(log) {
     'full squat':      'full-squat.mp3',
     'élévation':       'elevations-wc.mp3',
     'étirement':       'vendredi-souplesse.mp3',
-    'souplesse':       'vendredi-souplesse.mp3'
+    'souplesse':       'vendredi-souplesse.mp3',
+    'yoga iyengar':    'dimanche-yoga.mp3',
+    'yoga — iyengar':  'dimanche-yoga.mp3',
+    'iyengar':         'dimanche-yoga.mp3'
   };
 
   const injectedAudios = new Set();
