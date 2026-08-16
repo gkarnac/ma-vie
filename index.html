@@ -1912,8 +1912,13 @@ const DAY_CONFIG = WEEKLY;
 
 // ── effectiveWeekly() ─────────────────────────────────────────
 // Retourne les 7 jours du programme. weeklyOverrides (patch Coach) prend le dessus si présent.
+// Exception : dimanche (index 6) toujours = DAY_CONFIG[6] (Yoga Iyengar Aoede)
 function effectiveWeekly() {
-  if (S.weeklyOverrides && S.weeklyOverrides.length === 7) return S.weeklyOverrides;
+  if (S.weeklyOverrides && S.weeklyOverrides.length === 7) {
+    const result = [...S.weeklyOverrides];
+    result[6] = DAY_CONFIG[6]; // Dimanche toujours Yoga Iyengar Aoede
+    return result;
+  }
   // Utiliser le programme du Sheet si disponible
   const fromSheet = buildWeeklyFromSheet();
   if (fromSheet) return fromSheet;
