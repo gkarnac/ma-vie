@@ -943,12 +943,17 @@ function noSleepStop() {
 let audioCtx = null;
 let warmupAudio = null;
 const MP3_BASE = 'https://gkarnac.github.io/ma-vie/';
+// Certains fichiers servis via raw GitHub pour contourner le cache CDN
+const MP3_OVERRIDES = {
+  'dimanche-yoga.mp3': 'https://raw.githubusercontent.com/gkarnac/ma-vie/main/dimanche-yoga.mp3'
+};
 const _blobCache = {}; // filename → objectURL
 
 async function preloadMp3(fichier) {
   if (_blobCache[fichier]) return _blobCache[fichier];
   try {
-    const resp = await fetch(MP3_BASE + fichier);
+    const url = MP3_OVERRIDES[fichier] || (MP3_BASE + fichier);
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const blob = await resp.blob();
     _blobCache[fichier] = URL.createObjectURL(blob);
@@ -1073,7 +1078,7 @@ let forceAudio = null;
 
 function getForceAudio(filename) {
   if (!forceAudio || forceAudio._src !== filename) {
-    const src = _blobCache[filename] || MP3_BASE + filename;
+    const src = _blobCache[filename] || MP3_OVERRIDES[filename] || (MP3_BASE + filename);
     forceAudio = new Audio(src);
     forceAudio._src = filename;
   }
