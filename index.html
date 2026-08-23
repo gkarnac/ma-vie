@@ -3996,10 +3996,19 @@ function parseFitFile(bytes, filename) {
   } catch(e) {
     console.warn('parseFitFile error:', e);
   }
-  // Filtrer tout exercice "échauffement" après le bloc warmup MP3 (doublon)
+  // Ajouter les exercices de cooldown (étirements guidés)
+  result.push(...COOLDOWN_WC);
+
+  // Filtrer les doublons :
+  // - échauffement après le bloc warmup MP3
+  // - cooldown vide (sans exercices réels, isRest ou durée nulle)
   return result.filter(function(ex, i) {
     if (i === 0) return true; // garder notre bloc warmup MP3
-    return !(ex.name || '').toLowerCase().includes('échauffement');
+    const nom = (ex.name || '').toLowerCase();
+    if (nom.includes('échauffement')) return false;
+    // Cooldown vide = pas de phase Cooldown OU cooldown sans speak ni durée utile
+    if (nom === 'cooldown' && !ex.speak && !ex.isRest) return false;
+    return true;
   });
 }
 
@@ -4343,10 +4352,19 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
-  // Filtrer tout exercice "échauffement" après le bloc warmup MP3 (doublon)
+  // Ajouter les exercices de cooldown (étirements guidés)
+  result.push(...COOLDOWN_WC);
+
+  // Filtrer les doublons :
+  // - échauffement après le bloc warmup MP3
+  // - cooldown vide (sans exercices réels, isRest ou durée nulle)
   return result.filter(function(ex, i) {
     if (i === 0) return true; // garder notre bloc warmup MP3
-    return !(ex.name || '').toLowerCase().includes('échauffement');
+    const nom = (ex.name || '').toLowerCase();
+    if (nom.includes('échauffement')) return false;
+    // Cooldown vide = pas de phase Cooldown OU cooldown sans speak ni durée utile
+    if (nom === 'cooldown' && !ex.speak && !ex.isRest) return false;
+    return true;
   });
 }
 
