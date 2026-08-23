@@ -3996,7 +3996,11 @@ function parseFitFile(bytes, filename) {
   } catch(e) {
     console.warn('parseFitFile error:', e);
   }
-  return result;
+  // Filtrer tout exercice "échauffement" après le bloc warmup MP3 (doublon)
+  return result.filter(function(ex, i) {
+    if (i === 0) return true; // garder notre bloc warmup MP3
+    return !(ex.name || '').toLowerCase().includes('échauffement');
+  });
 }
 
 async function startCoachSession() {
@@ -4339,8 +4343,11 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
-  result.push(...COOLDOWN_WC);
-  return result;
+  // Filtrer tout exercice "échauffement" après le bloc warmup MP3 (doublon)
+  return result.filter(function(ex, i) {
+    if (i === 0) return true; // garder notre bloc warmup MP3
+    return !(ex.name || '').toLowerCase().includes('échauffement');
+  });
 }
 
 async function acceptPlan() {
