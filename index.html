@@ -2985,6 +2985,13 @@ function stbNext() {
   if (leavingEx && leavingEx.isKicks) stopKicksAudio();
   if (leavingEx && leavingEx.isForce) stopForceAudio();
   if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
+  // Sécurité: réinitialiser tous les flags audio en arrivant au cooldown
+  const nextEx = S.seanceExercises[S.seanceIdx + 1];
+  if (nextEx && nextEx.phase === 'Cooldown') {
+    S.warmupAudioPlaying = false;
+    S.kicksAudioPlaying = false;
+    S.forceAudioPlaying = false;
+  }
   if (S.seanceIdx < S.seanceExercises.length - 1) {
     S.seanceIdx++;
     const ex = S.seanceExercises[S.seanceIdx];
@@ -4001,13 +4008,15 @@ function parseFitFile(bytes, filename) {
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
-  // - cooldown vide (sans exercices réels, isRest ou durée nulle)
+  // - entrée "cool down" / "cooldown" du Programme sheet (speak basique, pas les vrais exercices)
   return result.filter(function(ex, i) {
     if (i === 0) return true; // garder notre bloc warmup MP3
-    const nom = (ex.name || '').toLowerCase();
+    const nom = (ex.name || '').toLowerCase().trim();
+    const sp = (ex.speak || '').toLowerCase().trim();
     if (nom.includes('échauffement')) return false;
-    // Cooldown vide = pas de phase Cooldown OU cooldown sans speak ni durée utile
-    if (nom === 'cooldown' && !ex.speak && !ex.isRest) return false;
+    // Entrée "Cool down" du sheet = nom contient cooldown ET speak est vide ou générique
+    if ((nom === 'cooldown' || nom === 'cool down') &&
+        (!ex.speak || sp === 'cool down.' || sp === 'cooldown.')) return false;
     return true;
   });
 }
@@ -4357,13 +4366,15 @@ function logToTimer(log) {
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
-  // - cooldown vide (sans exercices réels, isRest ou durée nulle)
+  // - entrée "cool down" / "cooldown" du Programme sheet (speak basique, pas les vrais exercices)
   return result.filter(function(ex, i) {
     if (i === 0) return true; // garder notre bloc warmup MP3
-    const nom = (ex.name || '').toLowerCase();
+    const nom = (ex.name || '').toLowerCase().trim();
+    const sp = (ex.speak || '').toLowerCase().trim();
     if (nom.includes('échauffement')) return false;
-    // Cooldown vide = pas de phase Cooldown OU cooldown sans speak ni durée utile
-    if (nom === 'cooldown' && !ex.speak && !ex.isRest) return false;
+    // Entrée "Cool down" du sheet = nom contient cooldown ET speak est vide ou générique
+    if ((nom === 'cooldown' || nom === 'cool down') &&
+        (!ex.speak || sp === 'cool down.' || sp === 'cooldown.')) return false;
     return true;
   });
 }
