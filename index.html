@@ -874,6 +874,8 @@ const S = {
   wakeLock: null,
   warmupAudioPlaying: false,
   kicksAudioPlaying: false,
+  forceAudioPlaying: false,
+  cooldownAudioPlaying: false,
   coachMessages: [],
   coachPlan: null,
   coachAnalysing: false,
@@ -982,7 +984,8 @@ async function preloadSeanceAudios(exercises) {
   exercises.forEach(ex => {
     if (ex.phase === 'Échauffement') needed.add('warmup.mp3');
     if (ex.isKicks) needed.add('kicks.mp3');
-    if ((ex.isForce || ex.isCooldown) && ex.forceFichier) needed.add(ex.forceFichier);
+    if (ex.isForce && ex.forceFichier) needed.add(ex.forceFichier);
+    if (ex.isCooldown && ex.cooldownFichier) needed.add(ex.cooldownFichier);
   });
   await Promise.all([...needed].map(f => preloadMp3(f)));
 }
@@ -1104,6 +1107,44 @@ function stopForceAudio() {
   if (forceAudio) { forceAudio.onended = null; forceAudio.onerror = null; forceAudio.pause(); forceAudio.currentTime = 0; }
   S.forceAudioPlaying = false;
 }
+let cooldownAudio = null;
+
+function getCooldownAudio(fichier) {
+  if (!cooldownAudio || cooldownAudio._src !== fichier) {
+    const src = _blobCache[fichier] || MP3_BASE + fichier;
+    cooldownAudio = new Audio(src);
+    cooldownAudio._src = fichier;
+  }
+  return cooldownAudio;
+}
+
+function startCooldownAudio(fichier) {
+  const audio = getCooldownAudio(fichier);
+  audio.currentTime = 0;
+  S.cooldownAudioPlaying = true;
+  audio.onended = () => {
+    S.cooldownAudioPlaying = false;
+    if (S.seanceRunning) {
+      const cur = S.seanceExercises[S.seanceIdx];
+      if (cur && cur.isCooldown) stbNext();
+    }
+  };
+  audio.onpause = () => {
+    if (S.cooldownAudioPlaying && S.seanceRunning) {
+      setTimeout(() => { if (S.cooldownAudioPlaying && S.seanceRunning && audio.paused) audio.play().catch(() => {}); }, 800);
+    }
+  };
+  audio.onerror = () => { S.cooldownAudioPlaying = false; };
+  audio.play().catch(() => { S.cooldownAudioPlaying = false; });
+}
+
+function stopCooldownAudio() {
+  if (cooldownAudio) {
+    cooldownAudio.onended = null; cooldownAudio.onerror = null;
+    cooldownAudio.onpause = null; cooldownAudio.pause(); cooldownAudio.currentTime = 0;
+  }
+  S.cooldownAudioPlaying = false;
+}
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1150,7 +1191,7 @@ function playDoneBeep() {
 
 // ── TTS ────────────────────────────────────────────────────────
 function speak(text) {
-  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying) return;
+  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying || S.cooldownAudioPlaying) return;
   if (!S.voiceEnabled || !text || !text.trim()) return;
   try {
     window.speechSynthesis.cancel();
@@ -2895,8 +2936,10 @@ function stbTickOnce() {
     const ex = S.seanceExercises[S.seanceIdx];
     if (ex && ex.isKicks) {
       startKicksAudio();
-    } else if (ex && (ex.isForce || ex.isCooldown)) {
+    } else if (ex && ex.isForce) {
       startForceAudio(ex.forceFichier);
+    } else if (ex && ex.isCooldown) {
+      startCooldownAudio(ex.cooldownFichier);
     } else if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
       setTimeout(() => speak(ex.speak), 300);
     }
@@ -2983,7 +3026,8 @@ function stbNext() {
   S.seanceSpoken = false;
   const leavingEx = S.seanceExercises[S.seanceIdx];
   if (leavingEx && leavingEx.isKicks) stopKicksAudio();
-  if (leavingEx && (leavingEx.isForce || leavingEx.isCooldown)) stopForceAudio();
+  if (leavingEx && leavingEx.isForce) stopForceAudio();
+  if (leavingEx && leavingEx.isCooldown) stopCooldownAudio();
   if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
   // Sécurité: réinitialiser tous les flags audio en arrivant au cooldown
   const nextEx = S.seanceExercises[S.seanceIdx + 1];
@@ -4003,19 +4047,13 @@ function parseFitFile(bytes, filename) {
   } catch(e) {
     console.warn('parseFitFile error:', e);
   }
-  // Bloc cooldown unique — guidé par cooldown.mp3 (pas de TTS interne)
-  if (!estSouplesse) {
-    result.push({
-      name: 'Retour au calme',
-      speak: '',
-      detail: 'Narration vocale en cours...',
-      duration: 600,
-      phase: 'Cooldown',
-      isRest: false,
-      isCooldown: true,
-      forceFichier: 'cooldown.mp3'
-    });
-  }
+  // Bloc cooldown guidé par MP3
+  result.push({
+    name: 'Retour au calme',
+    speak: '', detail: 'Narration vocale en cours...',
+    duration: 600, phase: 'Cooldown',
+    isRest: false, isCooldown: true, cooldownFichier: 'cooldown.mp3'
+  });
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
@@ -4372,19 +4410,13 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
-  // Bloc cooldown unique — guidé par cooldown.mp3 (pas de TTS interne)
-  if (!estSouplesse) {
-    result.push({
-      name: 'Retour au calme',
-      speak: '',
-      detail: 'Narration vocale en cours...',
-      duration: 600,
-      phase: 'Cooldown',
-      isRest: false,
-      isCooldown: true,
-      forceFichier: 'cooldown.mp3'
-    });
-  }
+  // Bloc cooldown guidé par MP3
+  result.push({
+    name: 'Retour au calme',
+    speak: '', detail: 'Narration vocale en cours...',
+    duration: 600, phase: 'Cooldown',
+    isRest: false, isCooldown: true, cooldownFichier: 'cooldown.mp3'
+  });
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
