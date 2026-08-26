@@ -982,7 +982,7 @@ async function preloadSeanceAudios(exercises) {
   exercises.forEach(ex => {
     if (ex.phase === 'Échauffement') needed.add('warmup.mp3');
     if (ex.isKicks) needed.add('kicks.mp3');
-    if (ex.isForce && ex.forceFichier) needed.add(ex.forceFichier);
+    if ((ex.isForce || ex.isCooldown) && ex.forceFichier) needed.add(ex.forceFichier);
   });
   await Promise.all([...needed].map(f => preloadMp3(f)));
 }
@@ -2895,7 +2895,7 @@ function stbTickOnce() {
     const ex = S.seanceExercises[S.seanceIdx];
     if (ex && ex.isKicks) {
       startKicksAudio();
-    } else if (ex && ex.isForce) {
+    } else if (ex && (ex.isForce || ex.isCooldown)) {
       startForceAudio(ex.forceFichier);
     } else if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
       setTimeout(() => speak(ex.speak), 300);
@@ -2983,7 +2983,7 @@ function stbNext() {
   S.seanceSpoken = false;
   const leavingEx = S.seanceExercises[S.seanceIdx];
   if (leavingEx && leavingEx.isKicks) stopKicksAudio();
-  if (leavingEx && leavingEx.isForce) stopForceAudio();
+  if (leavingEx && (leavingEx.isForce || leavingEx.isCooldown)) stopForceAudio();
   if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
   // Sécurité: réinitialiser tous les flags audio en arrivant au cooldown
   const nextEx = S.seanceExercises[S.seanceIdx + 1];
@@ -4003,8 +4003,19 @@ function parseFitFile(bytes, filename) {
   } catch(e) {
     console.warn('parseFitFile error:', e);
   }
-  // Ajouter les exercices de cooldown (étirements guidés)
-  result.push(...COOLDOWN_WC);
+  // Bloc cooldown unique — guidé par cooldown.mp3 (pas de TTS interne)
+  if (!estSouplesse) {
+    result.push({
+      name: 'Retour au calme',
+      speak: '',
+      detail: 'Narration vocale en cours...',
+      duration: 600,
+      phase: 'Cooldown',
+      isRest: false,
+      isCooldown: true,
+      forceFichier: 'cooldown.mp3'
+    });
+  }
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
@@ -4361,8 +4372,19 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
-  // Ajouter les exercices de cooldown (étirements guidés)
-  result.push(...COOLDOWN_WC);
+  // Bloc cooldown unique — guidé par cooldown.mp3 (pas de TTS interne)
+  if (!estSouplesse) {
+    result.push({
+      name: 'Retour au calme',
+      speak: '',
+      detail: 'Narration vocale en cours...',
+      duration: 600,
+      phase: 'Cooldown',
+      isRest: false,
+      isCooldown: true,
+      forceFichier: 'cooldown.mp3'
+    });
+  }
 
   // Filtrer les doublons :
   // - échauffement après le bloc warmup MP3
