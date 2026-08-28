@@ -874,8 +874,6 @@ const S = {
   wakeLock: null,
   warmupAudioPlaying: false,
   kicksAudioPlaying: false,
-  forceAudioPlaying: false,
-  cooldownAudioPlaying: false,
   coachMessages: [],
   coachPlan: null,
   coachAnalysing: false,
@@ -985,7 +983,6 @@ async function preloadSeanceAudios(exercises) {
     if (ex.phase === 'Échauffement') needed.add('warmup.mp3');
     if (ex.isKicks) needed.add('kicks.mp3');
     if (ex.isForce && ex.forceFichier) needed.add(ex.forceFichier);
-    if (ex.isCooldown && ex.cooldownFichier) needed.add(ex.cooldownFichier);
   });
   await Promise.all([...needed].map(f => preloadMp3(f)));
 }
@@ -1107,44 +1104,6 @@ function stopForceAudio() {
   if (forceAudio) { forceAudio.onended = null; forceAudio.onerror = null; forceAudio.pause(); forceAudio.currentTime = 0; }
   S.forceAudioPlaying = false;
 }
-let cooldownAudio = null;
-
-function getCooldownAudio(fichier) {
-  if (!cooldownAudio || cooldownAudio._src !== fichier) {
-    const src = _blobCache[fichier] || MP3_BASE + fichier;
-    cooldownAudio = new Audio(src);
-    cooldownAudio._src = fichier;
-  }
-  return cooldownAudio;
-}
-
-function startCooldownAudio(fichier) {
-  const audio = getCooldownAudio(fichier);
-  audio.currentTime = 0;
-  S.cooldownAudioPlaying = true;
-  audio.onended = () => {
-    S.cooldownAudioPlaying = false;
-    if (S.seanceRunning) {
-      const cur = S.seanceExercises[S.seanceIdx];
-      if (cur && cur.isCooldown) stbNext();
-    }
-  };
-  audio.onpause = () => {
-    if (S.cooldownAudioPlaying && S.seanceRunning) {
-      setTimeout(() => { if (S.cooldownAudioPlaying && S.seanceRunning && audio.paused) audio.play().catch(() => {}); }, 800);
-    }
-  };
-  audio.onerror = () => { S.cooldownAudioPlaying = false; };
-  audio.play().catch(() => { S.cooldownAudioPlaying = false; });
-}
-
-function stopCooldownAudio() {
-  if (cooldownAudio) {
-    cooldownAudio.onended = null; cooldownAudio.onerror = null;
-    cooldownAudio.onpause = null; cooldownAudio.pause(); cooldownAudio.currentTime = 0;
-  }
-  S.cooldownAudioPlaying = false;
-}
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1191,7 +1150,7 @@ function playDoneBeep() {
 
 // ── TTS ────────────────────────────────────────────────────────
 function speak(text) {
-  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying || S.cooldownAudioPlaying) return;
+  if (S.warmupAudioPlaying || S.kicksAudioPlaying || S.forceAudioPlaying) return;
   if (!S.voiceEnabled || !text || !text.trim()) return;
   try {
     window.speechSynthesis.cancel();
@@ -1444,8 +1403,8 @@ function buildWeeklyFromSheet() {
     .slice()
     .sort((a, b) => a.jour - b.jour)
     .map(jour => {
-      // Dimanche (jour 6) : garde le yoga en dur
-      if (jour.jour === 6) return null;
+      // Vendredi (jour 4) et Dimanche (jour 6) : yoga en dur
+      if (jour.jour === 4 || jour.jour === 6) return null;
 
       let exJson = [];
       try { exJson = JSON.parse(jour.exercices_json); } catch(e) {}
@@ -1489,7 +1448,7 @@ function buildWeeklyFromSheet() {
       };
     });
 
-  // Remplacer null (dimanche) par le yoga en dur de DAY_CONFIG
+  // Remplacer null (vendredi + dimanche) par le yoga en dur de DAY_CONFIG
   const result = weekly.map((w, i) => w === null ? DAY_CONFIG[i] : w);
   return result.length === 7 ? result : null;
 }
@@ -1918,23 +1877,14 @@ const WEEKLY = [
       _R(20)],
     log:[{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Coiffe",s:1,d:"45s"}]
   },
-  { // Vendredi — Renforcement C : chin tuck + gainage + trapèzes
-    label:"Vendredi", type:"Renforcement C — Chin tuck + Trapèzes", color:"#8E44AD",
-    timer:[...PHYSIO_BASE,
-      _E("Chin tuck","Chin tuck. Ramène le menton vers l'arrière, maintiens trois secondes.","Assis droit — menton vers l'arrière, maintiens 3 sec",45,"Renforcement"),
-      _R(15),
-      _E("Chin tuck","Chin tuck, deuxième série.","2e série",45,"Renforcement"),
-      _R(20),
-      _E("Gainage latéral — gauche","Gainage latéral gauche. Hanche décollée, corps aligné.","Hanche décollée — corps aligné",20,"Renforcement"),
-      _R(10),
-      _E("Gainage latéral — droite","Gainage latéral droit.","Même chose à droite",20,"Renforcement"),
-      _R(20),
-      _E("Trapèzes en Y","Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut.","Ventre au sol, pouces vers le haut — lève lentement",40,"Renforcement"),
-      _R(10),
-      _E("Trapèzes en T","Trapèzes en T. Même position, bras en croix.","Bras en croix — lève lentement",40,"Renforcement"),
-      _R(20)],
-    log:[{n:"Chin tuck",s:2,d:"45s"},{n:"Gainage latéral",s:1,d:"20s"},{n:"Trapèzes Y+T",s:1,d:"40s"}]
-  },
+  { // Vendredi — Yoga Iyengar (repos actif, même séance que dimanche)
+    label:"Vendredi", type:"Yoga — Iyengar Leçon 1", color:"#8E44AD",
+    timer:[
+      {name:"Yoga Iyengar — séance guidée", speak:'', detail:'Narration vocale Aoede en cours...', duration:1200, phase:'Yoga', isRest:false, isForce:true, forceFichier:'dimanche-yoga.mp3'},
+      {name:"Fin de séance", speak:'', detail:'Bonne journée.', duration:5, phase:'Yoga', isRest:true}
+    ],
+    log:[{n:"Yoga Iyengar — Leçon 1",s:1,d:"~18min"}]
+  }
   { // Samedi — Cardio Z2 tapis roulant
     label:"Samedi", type:"Cardio Z2 + Mobilité", color:"#16A085",
     timer:[...PHYSIO_BASE,
@@ -1962,6 +1912,7 @@ const DAY_CONFIG = WEEKLY;
 function effectiveWeekly() {
   if (S.weeklyOverrides && S.weeklyOverrides.length === 7) {
     const result = [...S.weeklyOverrides];
+    result[4] = DAY_CONFIG[4]; // Vendredi toujours Yoga Iyengar — repos actif
     result[6] = DAY_CONFIG[6]; // Dimanche toujours Yoga Iyengar Aoede
     return result;
   }
@@ -2938,8 +2889,6 @@ function stbTickOnce() {
       startKicksAudio();
     } else if (ex && ex.isForce) {
       startForceAudio(ex.forceFichier);
-    } else if (ex && ex.isCooldown) {
-      startCooldownAudio(ex.cooldownFichier);
     } else if (ex && !ex.isRest && ex.speak && ex.phase !== 'Échauffement') {
       setTimeout(() => speak(ex.speak), 300);
     }
@@ -3027,15 +2976,7 @@ function stbNext() {
   const leavingEx = S.seanceExercises[S.seanceIdx];
   if (leavingEx && leavingEx.isKicks) stopKicksAudio();
   if (leavingEx && leavingEx.isForce) stopForceAudio();
-  if (leavingEx && leavingEx.isCooldown) stopCooldownAudio();
   if (leavingEx && leavingEx.phase === 'Échauffement') stopWarmupAudio();
-  // Sécurité: réinitialiser tous les flags audio en arrivant au cooldown
-  const nextEx = S.seanceExercises[S.seanceIdx + 1];
-  if (nextEx && nextEx.phase === 'Cooldown') {
-    S.warmupAudioPlaying = false;
-    S.kicksAudioPlaying = false;
-    S.forceAudioPlaying = false;
-  }
   if (S.seanceIdx < S.seanceExercises.length - 1) {
     S.seanceIdx++;
     const ex = S.seanceExercises[S.seanceIdx];
@@ -4047,27 +3988,7 @@ function parseFitFile(bytes, filename) {
   } catch(e) {
     console.warn('parseFitFile error:', e);
   }
-  // Bloc cooldown guidé par MP3
-  result.push({
-    name: 'Retour au calme',
-    speak: '', detail: 'Narration vocale en cours...',
-    duration: 600, phase: 'Cooldown',
-    isRest: false, isCooldown: true, cooldownFichier: 'cooldown.mp3'
-  });
-
-  // Filtrer les doublons :
-  // - échauffement après le bloc warmup MP3
-  // - entrée "cool down" / "cooldown" du Programme sheet (speak basique, pas les vrais exercices)
-  return result.filter(function(ex, i) {
-    if (i === 0) return true; // garder notre bloc warmup MP3
-    const nom = (ex.name || '').toLowerCase().trim();
-    const sp = (ex.speak || '').toLowerCase().trim();
-    if (nom.includes('échauffement')) return false;
-    // Entrée "Cool down" du sheet = nom contient cooldown ET speak est vide ou générique
-    if ((nom === 'cooldown' || nom === 'cool down') &&
-        (!ex.speak || sp === 'cool down.' || sp === 'cooldown.')) return false;
-    return true;
-  });
+  return result;
 }
 
 async function startCoachSession() {
@@ -4410,27 +4331,8 @@ function logToTimer(log) {
     }
     result.push(_R(20));
   });
-  // Bloc cooldown guidé par MP3
-  result.push({
-    name: 'Retour au calme',
-    speak: '', detail: 'Narration vocale en cours...',
-    duration: 600, phase: 'Cooldown',
-    isRest: false, isCooldown: true, cooldownFichier: 'cooldown.mp3'
-  });
-
-  // Filtrer les doublons :
-  // - échauffement après le bloc warmup MP3
-  // - entrée "cool down" / "cooldown" du Programme sheet (speak basique, pas les vrais exercices)
-  return result.filter(function(ex, i) {
-    if (i === 0) return true; // garder notre bloc warmup MP3
-    const nom = (ex.name || '').toLowerCase().trim();
-    const sp = (ex.speak || '').toLowerCase().trim();
-    if (nom.includes('échauffement')) return false;
-    // Entrée "Cool down" du sheet = nom contient cooldown ET speak est vide ou générique
-    if ((nom === 'cooldown' || nom === 'cool down') &&
-        (!ex.speak || sp === 'cool down.' || sp === 'cooldown.')) return false;
-    return true;
-  });
+  result.push(...COOLDOWN_WC);
+  return result;
 }
 
 async function acceptPlan() {
