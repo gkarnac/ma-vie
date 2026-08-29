@@ -4315,6 +4315,22 @@ function logToTimer(log) {
   log.forEach(function(ex) {
     const nomLower = (ex.n || '').toLowerCase();
 
+    // Physio WCT — bloc guidé par MP3 Aoede
+    if (nomLower.includes('physio wct') || nomLower.includes('physio west coast')) {
+      result.push({
+        name: ex.n,
+        speak: '',
+        detail: 'Abduction hanche + Flexion hanche — narration Aoede',
+        duration: 480,
+        phase: 'Physio WCT',
+        isRest: false,
+        isForce: true,
+        forceFichier: 'physio-wct-matin.mp3'
+      });
+      result.push(_R(5));
+      return;
+    }
+
     // Kicks — bloc unique guidé par le MP3
     if (nomLower.includes('kick')) {
       result.push({
