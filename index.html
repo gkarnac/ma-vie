@@ -1449,7 +1449,7 @@ function buildWeeklyFromSheet() {
         const ex = banque[item.id];
         if (!ex) return;
         const series = item.series || ex.series_defaut || 1;
-        const duree  = item.duree  || ex.duree_defaut  || getDureeDefaut(ex.nom) || 30;
+        const duree  = item.duree  || getDureeDefaut(ex.nom) || ex.duree_defaut  || 30;
         const pause  = item.pause  !== undefined ? item.pause : 20;
         for (let s = 1; s <= series; s++) {
           const label = series > 1 ? (s === 1 ? ex.nom : ex.nom + ', série ' + s) : ex.nom;
