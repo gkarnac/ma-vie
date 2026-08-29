@@ -2054,9 +2054,13 @@ function getWcProgram(type, moment) {
 function renderWcTimer(seanceOrPlan) {
   const id = seanceOrPlan.id;
   const type = seanceOrPlan.type || seanceOrPlan.wc_type || 'Wing Chun — Sac';
-  // Détecter si ce jour a un split matin/soir — toujours depuis DAY_CONFIG (pas weeklyOverrides)
-  const dayData = DAY_CONFIG.find(d => d.type === type);
+  // Détecter si ce jour a un split matin/soir
+  // Cherche dans DAY_CONFIG par type ET par index du jour courant
+  const todayDayIdx = jsToDayIdx(new Date().getDay());
+  const dayData = DAY_CONFIG.find(d => d.type === type) || DAY_CONFIG[todayDayIdx];
   const hasSplit = dayData && dayData.timerMatin && dayData.timerSoir && dayData.timerSoir.length > 0;
+  // Debug temporaire
+  console.log('[split]', 'type=', type, 'dayData=', dayData?.type, 'hasSplit=', hasSplit);
   // Moment sélectionné — stocker dans S.wcTimers pour persister le choix
   const t = S.wcTimers[id] || {};
   const moment = t.moment || (new Date().getHours() < 12 ? 'matin' : 'soir');
