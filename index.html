@@ -1489,9 +1489,15 @@ function findExercice(nom) {
 // Règle : on remplace speak seulement si la banque a une description_vocale non vide
 //         ET que le speak codé en dur est générique (= juste nom + point) ou absent.
 function enrichTimerFromBanque(timer) {
-  if (!timer || !S.exercices.length) return timer;
+  if (!timer) return timer;
   return timer.map(ex => {
     if (ex.isRest || !ex.name) return ex; // pauses : on touche pas
+    // Corriger la durée si getDureeDefaut a une valeur pour cet exercice
+    const dureeCorrigee = getDureeDefaut(ex.name);
+    if (dureeCorrigee && dureeCorrigee !== 30) {
+      ex = Object.assign({}, ex, { duration: dureeCorrigee });
+    }
+    if (!S.exercices.length) return ex;
     const banque = findExercice(ex.name);
     if (!banque || !banque.description_vocale) return ex;
     // speak générique = nom + '.' ou vide — on le remplace
