@@ -1866,7 +1866,7 @@ const WEEKLY = [
       _E("Bird-dog","Bird-dog, deuxième série.","2e série",60,"Renforcement"),
       _R(20),
       {name:"Physio WCT", speak:'', detail:'Abduction hanche + Flexion hanche — narration Aoede', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'}],
-    timerMatin:[...PHYSIO_BASE,
+    timerMatin:[{name:"Échauffement Wing Chun", speak:"", detail:"Narration Aoede en cours...", duration:480, phase:"Échauffement", isRest:false},
       {name:"Kicks — 5 types", speak:"", detail:"5 reps × 5 types G+D — veste lestée", duration:300, phase:"Kicks", isRest:false, isKicks:true}, {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
       {name:"Siu Nim Tao — Tam Lê", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       {name:"Siu Nim Tao — Ip Man", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
@@ -1886,7 +1886,7 @@ const WEEKLY = [
       _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
       _R(15),
       {name:"Physio WCT", speak:'', detail:'Abduction hanche + Flexion hanche — narration Aoede', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'}],
-    timerMatin:[...PHYSIO_BASE,
+    timerMatin:[{name:"Échauffement Wing Chun", speak:"", detail:"Narration Aoede en cours...", duration:480, phase:"Échauffement", isRest:false},
       {name:"Kicks — 5 types", speak:"", detail:"5 reps × 5 types G+D — veste lestée", duration:300, phase:"Kicks", isRest:false, isKicks:true}, {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
       {name:"Siu Nim Tao — Chan Wah Shan", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       {name:"Chum Kiu — Tam Lê", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
@@ -1904,7 +1904,7 @@ const WEEKLY = [
       _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
       _R(15),
       {name:"Physio WCT", speak:'', detail:'Abduction hanche + Flexion hanche — narration Aoede', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'}],
-    timerMatin:[...PHYSIO_BASE,
+    timerMatin:[{name:"Échauffement Wing Chun", speak:"", detail:"Narration Aoede en cours...", duration:480, phase:"Échauffement", isRest:false},
       {name:"Kicks — 5 types", speak:"", detail:"5 reps × 5 types G+D — veste lestée", duration:300, phase:"Kicks", isRest:false, isKicks:true}, {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
       {name:"Biu Jee — Tam Lê", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       {name:"Wing Chun Tong — Denis Shink", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
@@ -1934,7 +1934,7 @@ const WEEKLY = [
       _E("Gainage latéral — droite","Gainage latéral droit, deuxième série.","2e série",20,"Renforcement"),
       _R(20),
       {name:"Physio WCT", speak:'', detail:'Abduction hanche + Flexion hanche — narration Aoede', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'}],
-    timerMatin:[...PHYSIO_BASE,
+    timerMatin:[{name:"Échauffement Wing Chun", speak:"", detail:"Narration Aoede en cours...", duration:480, phase:"Échauffement", isRest:false},
       {name:"Kicks — 5 types", speak:"", detail:"5 reps × 5 types G+D — veste lestée", duration:300, phase:"Kicks", isRest:false, isKicks:true}, {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
       {name:"Siu Nim Tao — Tam Lê", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       {name:"Siu Nim Tao — Ip Man", speak:"", detail:"Veste lestée — forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
@@ -2932,7 +2932,8 @@ function selectSeanceDay(idx, moment) {
   if (hasSplit && moment === 'matin') {
     timerSource = dayConfig.timerMatin;
   } else {
-    timerSource = w.timer; // timer existant pour le soir (pour l'instant)
+    // Soir : pas d'échauffement — filtrer les exercices phase Échauffement
+    timerSource = (w.timer || []).filter(ex => ex.phase !== 'Échauffement');
   }
   S.seanceExercises = enrichTimerFromBanque(timerSource);
   S.seanceIdx = 0;
