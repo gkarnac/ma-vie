@@ -2932,8 +2932,12 @@ function selectSeanceDay(idx, moment) {
   if (hasSplit && moment === 'matin') {
     timerSource = dayConfig.timerMatin;
   } else {
-    // Soir : pas d'échauffement — filtrer les exercices phase Échauffement
-    timerSource = (w.timer || []).filter(ex => ex.phase !== 'Échauffement');
+    // Soir : pas d'échauffement, pas de kicks, pas de physio WCT
+    timerSource = (w.timer || []).filter(ex =>
+      ex.phase !== 'Échauffement' &&
+      !ex.isKicks &&
+      ex.forceFichier !== 'physio-wct-matin.mp3'
+    );
   }
   S.seanceExercises = enrichTimerFromBanque(timerSource);
   S.seanceIdx = 0;
