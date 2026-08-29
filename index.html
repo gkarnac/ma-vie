@@ -2983,6 +2983,8 @@ function selectSeanceDay(idx, moment) {
   const w = effectiveWeekly()[idx];
   const dayConfig = DAY_CONFIG[idx];
   const hasSplit = dayConfig && dayConfig.timerMatin && dayConfig.timerSoir && dayConfig.timerSoir.length > 0;
+  // Debug
+  console.log('[selectSeanceDay] idx=',idx,'dayConfig type=',dayConfig?.type,'hasSplit=',hasSplit,'timerMatin len=',dayConfig?.timerMatin?.length,'timerSoir len=',dayConfig?.timerSoir?.length);
   // Déterminer le moment (matin/soir)
   if (!moment) moment = S.seanceMoment || (new Date().getHours() < 12 ? 'matin' : 'soir');
   S.seanceMoment = moment;
