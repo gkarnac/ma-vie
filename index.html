@@ -450,11 +450,6 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <span class="seance-type-label" id="seance-type-label" style="margin:0;font-size:9px">—</span>
   </div>
-  <!-- Sélecteur Matin / Soir -->
-  <div id="split-matin-soir" style="display:none;gap:8px;justify-content:center;margin-bottom:8px">
-    <button id="btn-matin-soir-matin" onclick="selectSeanceDay(S.seanceDayIdx,'matin')" style="padding:6px 18px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#000;font-size:12px;cursor:pointer;font-weight:600">🌅 Matin</button>
-    <button id="btn-matin-soir-soir" onclick="selectSeanceDay(S.seanceDayIdx,'soir')" style="padding:6px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--txt2);font-size:12px;cursor:pointer">🌆 Soir</button>
-  </div>
   <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
     <button onclick="changeSeanceWeek(-1)" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--txt2);font-size:18px;cursor:pointer;padding:4px 10px;line-height:1">‹</button>
     <div class="day-sel-row" id="day-selector" style="flex:1;margin-bottom:0">
@@ -1819,155 +1814,68 @@ const PHYSIO_BASE = [
 // RENFO_BASE, COOLDOWN et COIFFE_BASE supprimés — le programme vient maintenant du Sheet (feuille Programme).
 
 // ── WEEKLY — 7 jours différenciés ────────────────────────────
-// Chaque jour a timerMatin (6h) et timerSoir (17h) + timer (fallback = matin)
-
-// Formes matin — timers silencieux (pas de narration)
-const _F = (nom, duree) => ({name:nom, speak:'', detail:'Veste lestée — forme complète', duration:duree, phase:'Formes', isRest:false});
-
-// Bloc physio WCT — commun à tous les matins
-const PHYSIO_WCT = [
-  {name:"Physio WCT — Abduction + Flexion hanche", speak:'', detail:'Narration Aoede — abduction hanche × 3 séries + flexion hanche × 3 séries', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'},
-];
-
-
 const WEEKLY = [
-  { // Lundi
-    label:"Lundi", type:"Matin WC + Soir Force A", color:"#1D9E75",
-    timerMatin:[
-      ...PHYSIO_BASE,
-      {name:"Kicks — 5 types", speak:'', detail:'5 reps × 5 types G+D — veste lestée', duration:300, phase:'Kicks', isRest:false, isKicks:true},
-      _R(30),
-      _F("Siu Nim Tao — Tam Lê", 420),
+  { // Lundi — Renforcement A : planche + bird-dog + coiffe
+    label:"Lundi", type:"Renforcement A — Planche + Coiffe", color:"#1D9E75",
+    timer:[...PHYSIO_BASE,
+      _E("Planche complète","Planche complète. Corps droit des talons à la tête.","Corps droit des talons à la tête",35,"Renforcement"),
       _R(20),
-      _F("Siu Nim Tao — Ip Man", 420),
+      _E("Planche complète","Planche complète, deuxième série.","2e série",35,"Renforcement"),
       _R(20),
-      ...PHYSIO_WCT,
-    ],
-    timerSoir:[
-      ...PHYSIO_BASE,
-      _E("Push ups inclinés","Push ups inclinés. Série un. Dix répétitions.","Mains sur surface élevée — corps droit",40,"Convict"),
-      _R(60),
-      _E("Push ups inclinés","Push ups inclinés. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Push ups inclinés","Push ups inclinés. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Descends jusqu'en bas, talons au sol. Série un.","Talons au sol — descends complètement",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _F("Baat Jaam Do — Tam Lê", 420),
+      _E("Planche complète","Planche complète, troisième série.","3e série",35,"Renforcement"),
       _R(20),
-      _F("Baat Jaam Do — Ip Man", 420),
-    ],
-    timer:[], // fallback — vide, l'UI choisit matin ou soir
-    logMatin:[{n:"Kicks 5 types",s:1,d:"5 reps G+D"},{n:"SNT Tam Lê",s:1,d:"7min"},{n:"SNT Ip Man",s:1,d:"7min"},{n:"Physio WCT",s:1,d:"8min"}],
-    logSoir:[{n:"Push ups inclinés",s:3,d:"10 reps"},{n:"Full squat",s:3,d:"10 reps"},{n:"Baat Jaam Do × 2",s:1,d:"14min"}],
-    log:[{n:"Matin + Soir",s:1,d:""}]
+      _E("Bird-dog","Bird-dog. Bras gauche et jambe droite tendus, maintiens cinq secondes.","Bras gauche + jambe droite — maintiens 5 sec",60,"Renforcement"),
+      _R(20),
+      _E("Bird-dog","Bird-dog, deuxième série.","2e série",60,"Renforcement"),
+      _R(20)],
+    log:[{n:"Planche complète",s:3,d:"35s"},{n:"Bird-dog",s:2,d:"60s"},{n:"Coiffe",s:1,d:"45s"}]
   },
-  { // Mardi
-    label:"Mardi", type:"Matin WC + Soir Pull/LR", color:"#BA7517",
-    timerMatin:[
-      ...PHYSIO_BASE,
-      {name:"Kicks — 5 types", speak:'', detail:'5 reps × 5 types G+D — veste lestée', duration:300, phase:'Kicks', isRest:false, isKicks:true},
-      _R(30),
-      _F("Siu Nim Tao — Chan Wah Shan", 420),
-      _R(20),
-      _F("Chum Kiu — Tam Lê", 420),
-      _R(20),
-      ...PHYSIO_WCT,
-    ],
-    timerSoir:[
-      ...PHYSIO_BASE,
-      _E("Tirage horizontal","Tirage horizontal. Série un. Dix répétitions.","Corps incliné — tire la poitrine vers la barre",40,"Convict"),
-      _R(60),
-      _E("Tirage horizontal","Tirage horizontal. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Tirage horizontal","Tirage horizontal. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _E("Knee tucks","Knee tucks. Allongé, genoux vers la poitrine. Série un.","Genoux vers poitrine — bas du dos au sol",40,"Convict"),
-      _R(60),
-      _E("Knee tucks","Knee tucks. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Knee tucks","Knee tucks. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _F("Muk Yan Jong — Tam Lê", 900),
-    ],
-    timer:[],
-    logMatin:[{n:"Kicks 5 types",s:1,d:"5 reps G+D"},{n:"SNT Chan Wah Shan",s:1,d:"7min"},{n:"Chum Kiu",s:1,d:"7min"},{n:"Physio WCT",s:1,d:"8min"}],
-    logSoir:[{n:"Tirage horizontal",s:3,d:"10 reps"},{n:"Knee tucks",s:3,d:"10 reps"},{n:"Muk Yan Jong",s:1,d:"15min"}],
-    log:[{n:"Matin + Soir",s:1,d:""}]
+  { // Mardi — Mobilité
+    label:"Mardi", type:"Mobilité & Récupération", color:"#BA7517",
+    timer:[...PHYSIO_BASE,
+      _E("Étirement pectoraux","Étirement des pectoraux. Bras en croix contre un cadre de porte, avance doucement.","Bras en croix — ouvre la poitrine",40,"Mobilité"),
+      _R(15),
+      _E("Étirement pectoraux","Étirement pectoraux, deuxième série.","Plus profond",40,"Mobilité"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
+      _R(15)],
+    log:[{n:"Étirement pectoraux",s:2,d:"40s"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
-  { // Mercredi
-    label:"Mercredi", type:"Matin WC + Soir Bridge/HS", color:"#27AE60",
-    timerMatin:[
-      ...PHYSIO_BASE,
-      {name:"Kicks — 5 types", speak:'', detail:'5 reps × 5 types G+D — veste lestée', duration:300, phase:'Kicks', isRest:false, isKicks:true},
-      _R(30),
-      _F("Biu Jee — Tam Lê", 420),
+  { // Mercredi — Récupération active (sans doublon thoracique)
+    label:"Mercredi", type:"Récupération active", color:"#27AE60",
+    timer:[...PHYSIO_BASE,
+      _E("Marche douce — 10 min","Marche douce pendant 10 minutes. Rythme très léger, récupération active. Pas d'essoufflement.","Rythme très léger — récupération, pas d'effort",600,"Cardio"),
       _R(20),
-      _F("Wing Chun Tong — Denis Shink", 420),
-      _R(20),
-      ...PHYSIO_WCT,
-    ],
-    timerSoir:[
-      ...PHYSIO_BASE,
-      _E("Short bridge","Short bridge. Ponts courts. Série un.","Sur le dos — soulève le bassin",40,"Convict"),
-      _R(60),
-      _E("Short bridge","Short bridge. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Short bridge","Short bridge. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _E("Crow stand","Crow stand. Équilibre sur les mains. Tiens aussi longtemps que possible.","Mains au sol — genoux sur les coudes",30,"Convict"),
-      _R(60),
-      _E("Crow stand","Crow stand. Deuxième tentative.","2e tentative",30,"Convict"),
-      _R(60),
-      _E("Crow stand","Crow stand. Troisième tentative.","3e tentative",30,"Convict"),
-      _R(60),
-      _E("Cardio Z2 — tapis","Cardio Zone 2. Trente minutes. Objectif 129 à 141 battements par minute. Ta Garmin enregistre.","Z2 : 129-141 bpm — rythme conversationnel",1800,"Cardio"),
-    ],
-    timer:[],
-    logMatin:[{n:"Kicks 5 types",s:1,d:"5 reps G+D"},{n:"Biu Jee",s:1,d:"7min"},{n:"Wing Chun Tong",s:1,d:"7min"},{n:"Physio WCT",s:1,d:"8min"}],
-    logSoir:[{n:"Short bridge",s:3,d:"10 reps"},{n:"Crow stand",s:3,d:"30s"},{n:"Cardio Z2",s:1,d:"30min"}],
-    log:[{n:"Matin + Soir",s:1,d:""}]
+      _E("Pendule de Codman","Pendule de Codman. Penché en avant, bras suspendu, petit cercle doux.","Penché, bras relâché — petit cercle doux",60,"Coiffe"),
+      _R(15),
+      _E("Pendule de Codman","Pendule de Codman, sens inverse.","Sens inverse",60,"Coiffe"),
+      _R(15)],
+    log:[{n:"Marche douce",s:1,d:"10min"},{n:"Pendule Codman",s:2,d:"60s"}]
   },
-  { // Jeudi
-    label:"Jeudi", type:"Matin WC + Soir Push/Squat+Élév", color:"#2980B9",
-    timerMatin:[
-      ...PHYSIO_BASE,
-      {name:"Kicks — 5 types", speak:'', detail:'5 reps × 5 types G+D — veste lestée', duration:300, phase:'Kicks', isRest:false, isKicks:true},
-      _R(30),
-      _F("Siu Nim Tao — Tam Lê", 420),
+  { // Jeudi — Renforcement B : pont fessier + dead bug + gainage + coiffe
+    label:"Jeudi", type:"Renforcement B — Pont + Gainage + Coiffe", color:"#2980B9",
+    timer:[...PHYSIO_BASE,
+      _E("Pont fessier","Pont fessier. Monte, serre les fessiers, maintiens trois secondes.","Monte, serre, maintiens 3 sec",50,"Renforcement"),
       _R(20),
-      _F("Siu Nim Tao — Ip Man", 420),
+      _E("Pont fessier","Pont fessier, deuxième série.","2e série",50,"Renforcement"),
       _R(20),
-      ...PHYSIO_WCT,
-    ],
-    timerSoir:[
-      ...PHYSIO_BASE,
-      _E("Push ups inclinés","Push ups inclinés. Série un.","Mains sur surface élevée",40,"Convict"),
-      _R(60),
-      _E("Push ups inclinés","Push ups inclinés. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Push ups inclinés","Push ups inclinés. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Série un.","Talons au sol — descends complètement",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Série deux.","2e série",40,"Convict"),
-      _R(60),
-      _E("Full squat","Full squat. Série trois.","3e série",40,"Convict"),
-      _R(60),
-      _E("Élévation frontale — talon","Élévation frontale. Depuis Yi Ji Kim Yeung Ma, élève la jambe, talon en avant. Maintiens trois secondes.","Depuis goat pose — talon en avant, maintiens 3 sec",60,"Élévations WC"),
+      _E("Pont fessier","Pont fessier, troisième série.","3e série",50,"Renforcement"),
       _R(20),
-      _E("Élévation latérale — side kick","Élévation latérale. Élève la jambe sur le côté. Maintiens trois secondes.","Côté — pied horizontal, maintiens 3 sec",60,"Élévations WC"),
+      _E("Dead bug","Dead bug. Sur le dos, descends bras droit et jambe gauche sans décoller le bas du dos.","Bras vers plafond, genoux à 90° — descends sans décoller",50,"Renforcement"),
       _R(20),
-      _E("Élévation en coupe — bloquant","Élévation en coupe. Extérieur vers l'intérieur. Maintiens trois secondes.","Extérieur vers intérieur — maintiens 3 sec",60,"Élévations WC"),
-    ],
-    timer:[],
-    logMatin:[{n:"Kicks 5 types",s:1,d:"5 reps G+D"},{n:"SNT Tam Lê",s:1,d:"7min"},{n:"SNT Ip Man",s:1,d:"7min"},{n:"Physio WCT",s:1,d:"8min"}],
-    logSoir:[{n:"Push ups inclinés",s:3,d:"10 reps"},{n:"Full squat",s:3,d:"10 reps"},{n:"Élévations WC",s:1,d:"3 types × 5 reps"},{n:"Luk Dim Boon Kwan",s:1,d:"10min"}],
-    log:[{n:"Matin + Soir",s:1,d:""}]
+      _E("Dead bug","Dead bug, deuxième série.","2e série",50,"Renforcement"),
+      _R(20),
+      _E("Gainage latéral — gauche","Gainage latéral gauche. Hanche décollée, corps aligné.","Hanche décollée — corps aligné",20,"Renforcement"),
+      _R(10),
+      _E("Gainage latéral — droite","Gainage latéral droit.","Même chose à droite",20,"Renforcement"),
+      _R(10),
+      _E("Gainage latéral — gauche","Gainage latéral gauche, deuxième série.","2e série",20,"Renforcement"),
+      _R(10),
+      _E("Gainage latéral — droite","Gainage latéral droit, deuxième série.","2e série",20,"Renforcement"),
+      _R(20)],
+    log:[{n:"Pont fessier",s:3,d:"50s"},{n:"Dead bug",s:2,d:"50s"},{n:"Gainage latéral",s:2,d:"20s"},{n:"Coiffe",s:1,d:"45s"}]
   },
   { // Vendredi — Yoga Iyengar (repos actif, même séance que dimanche)
     label:"Vendredi", type:"Yoga — Iyengar Leçon 1", color:"#8E44AD",
@@ -1976,7 +1884,7 @@ const WEEKLY = [
       {name:"Fin de séance", speak:'', detail:'Bonne journée.', duration:5, phase:'Yoga', isRest:true}
     ],
     log:[{n:"Yoga Iyengar — Leçon 1",s:1,d:"~18min"}]
-  },
+  }
   { // Samedi — Cardio Z2 tapis roulant
     label:"Samedi", type:"Cardio Z2 + Mobilité", color:"#16A085",
     timer:[...PHYSIO_BASE,
@@ -2034,43 +1942,22 @@ function jsToDayIdx(jsDay) { return jsDay === 0 ? 6 : jsDay - 1; }
 // Programmes spéciaux — réservé pour usage futur
 const SPECIAL_PROGRAMS = {};
 
-function getWcProgram(type, moment) {
-  // moment = 'matin' | 'soir' | undefined (auto selon l'heure)
+function getWcProgram(type) {
+  // Programmes spéciaux (coiffe, marche)
   if (SPECIAL_PROGRAMS[type]) return SPECIAL_PROGRAMS[type];
-  // Toujours chercher timerMatin/timerSoir dans DAY_CONFIG (source de vérité)
-  const dayConfig = DAY_CONFIG.find(d => d.type === type);
-  // Déterminer le moment si non spécifié
-  if (!moment) {
-    const h = new Date().getHours();
-    moment = h < 12 ? 'matin' : 'soir';
-  }
-  if (dayConfig) {
-    if (moment === 'soir' && dayConfig.timerSoir && dayConfig.timerSoir.length > 0) return dayConfig.timerSoir;
-    if (dayConfig.timerMatin && dayConfig.timerMatin.length > 0) return dayConfig.timerMatin;
-    if (dayConfig.timer && dayConfig.timer.length > 0) return dayConfig.timer;
-  }
-  // Fallback sur effectiveWeekly
+  // Programmes WEEKLY
   const W = effectiveWeekly();
   const day = W.find(d => d.type === type);
-  if (day && day.timer && day.timer.length > 0) return day.timer;
-  return W[0].timerMatin || W[0].timer || [];
+  if (day) return day.timer;
+  return W[0].timer; // fallback Lundi
 }
 
 
 function renderWcTimer(seanceOrPlan) {
   const id = seanceOrPlan.id;
   const type = seanceOrPlan.type || seanceOrPlan.wc_type || 'Wing Chun — Sac';
-  // Détecter si ce jour a un split matin/soir
-  // Cherche dans DAY_CONFIG par type ET par index du jour courant
-  const todayDayIdx = jsToDayIdx(new Date().getDay());
-  const dayData = DAY_CONFIG.find(d => d.type === type) || DAY_CONFIG[todayDayIdx];
-  const hasSplit = dayData && dayData.timerMatin && dayData.timerSoir && dayData.timerSoir.length > 0;
-  // Debug temporaire
-  console.log('[split]', 'type=', type, 'dayData=', dayData?.type, 'hasSplit=', hasSplit);
-  // Moment sélectionné — stocker dans S.wcTimers pour persister le choix
   const t = S.wcTimers[id] || {};
-  const moment = t.moment || (new Date().getHours() < 12 ? 'matin' : 'soir');
-  const prog = getWcProgram(type, moment);
+  const prog = getWcProgram(type);
   const idx = t.idx || 0;
   const ex = prog[idx] || prog[0];
   const remaining = t.remaining !== undefined ? t.remaining : ex.duration;
@@ -2085,30 +1972,18 @@ function renderWcTimer(seanceOrPlan) {
     <div class="wc-ex-detail">${ex.detail || ''}</div>
     <div class="wc-timer-display ${isCountdown ? 'countdown' : ''}" id="wctimer-${id}">${mm}:${ss}</div>
     ${next ? `<div class="wc-next">Suivant : ${next.isRest ? 'Pause' : next.name}</div>` : '<div class="wc-next">Dernier exercice</div>'}
-    ${hasSplit ? `<div style="display:flex;gap:6px;margin-bottom:8px;justify-content:center">
-      <button onclick="wcSetMoment('${id}','${type}','matin')" style="padding:5px 14px;border-radius:20px;border:1px solid ${moment==='matin'?'var(--accent)':'var(--border)'};background:${moment==='matin'?'var(--accent)':'transparent'};color:${moment==='matin'?'#000':'var(--text2)'};font-size:12px;cursor:pointer">🌅 Matin</button>
-      <button onclick="wcSetMoment('${id}','${type}','soir')" style="padding:5px 14px;border-radius:20px;border:1px solid ${moment==='soir'?'var(--accent)':'var(--border)'};background:${moment==='soir'?'var(--accent)':'transparent'};color:${moment==='soir'?'#000':'var(--text2)'};font-size:12px;cursor:pointer">🌆 Soir</button>
-    </div>` : ''}
     <div class="wc-controls">
       <button class="timer-btn tbreset btn-sm" onclick="wcSkipPrev('${id}')">⏮</button>
-      <button class="timer-btn ${isRunning ? 'tbpause' : 'tbstart'}" onclick="wcToggle('${id}','${type}','${moment}')" style="flex:3">${isRunning ? '⏸ Pause' : '▶ Démarrer'}</button>
-      <button class="timer-btn tbreset btn-sm" onclick="wcSkipNext('${id}','${type}','${moment}')">⏭</button>
+      <button class="timer-btn ${isRunning ? 'tbpause' : 'tbstart'}" onclick="wcToggle('${id}','${type}')" style="flex:3">${isRunning ? '⏸ Pause' : '▶ Démarrer'}</button>
+      <button class="timer-btn tbreset btn-sm" onclick="wcSkipNext('${id}','${type}')">⏭</button>
     </div>
   </div>`;
 }
 
-function wcSetMoment(id, type, moment) {
-  // Changer matin/soir et réinitialiser le timer
-  if (S.wcTimers[id] && S.wcTimers[id].interval) clearInterval(S.wcTimers[id].interval);
-  const prog = getWcProgram(type, moment);
-  S.wcTimers[id] = {idx:0, remaining:prog[0] ? prog[0].duration : 0, running:false, interval:null, moment};
-  rerender();
-}
-
-function wcToggle(id, type, moment) {
-  const prog = getWcProgram(type, moment);
+function wcToggle(id, type) {
+  const prog = getWcProgram(type);
   if (!S.wcTimers[id]) {
-    S.wcTimers[id] = {idx:0, remaining:prog[0].duration, running:false, interval:null, moment: moment || (new Date().getHours()<12?'matin':'soir')};
+    S.wcTimers[id] = {idx:0, remaining:prog[0].duration, running:false, interval:null};
   }
   const t = S.wcTimers[id];
   if (t.running) {
@@ -2182,7 +2057,7 @@ function wcNext(id, type) {
   }
 }
 
-function wcSkipNext(id, type, moment) {
+function wcSkipNext(id, type) {
   const t = S.wcTimers[id];
   if (t) { clearInterval(t.interval); t.running = false; }
   wcNext(id, type);
@@ -2975,37 +2850,16 @@ function applyDayButtons(idx) {
   });
 }
 
-function selectSeanceDay(idx, moment) {
+function selectSeanceDay(idx) {
   // Si un timer tourne, le stopper proprement avant de basculer
   if (S.seanceRunning) stbToggle(); // met en pause
   S.seanceDayIdx = idx;
   const dayNumEl = document.getElementById('seance-day-num');
   if (dayNumEl) dayNumEl.textContent = idx + 1;
   const w = effectiveWeekly()[idx];
-  const dayConfig = DAY_CONFIG[idx];
-  const hasSplit = dayConfig && dayConfig.timerMatin && dayConfig.timerSoir && dayConfig.timerSoir.length > 0;
-  // Debug
-  console.log('[selectSeanceDay] idx=',idx,'dayConfig type=',dayConfig?.type,'hasSplit=',hasSplit,'timerMatin len=',dayConfig?.timerMatin?.length,'timerSoir len=',dayConfig?.timerSoir?.length);
-  // Déterminer le moment (matin/soir)
-  if (!moment) moment = S.seanceMoment || (new Date().getHours() < 12 ? 'matin' : 'soir');
-  S.seanceMoment = moment;
-  // Choisir le bon timer
-  let timer;
-  if (hasSplit) {
-    timer = moment === 'soir' ? dayConfig.timerSoir : dayConfig.timerMatin;
-  } else {
-    timer = w.timer || dayConfig?.timer || [];
-  }
-  // Mettre à jour les boutons matin/soir
-  const btnMatin = document.getElementById('btn-matin-soir-matin');
-  const btnSoir = document.getElementById('btn-matin-soir-soir');
-  const splitRow = document.getElementById('split-matin-soir');
-  if (splitRow) splitRow.style.display = hasSplit ? 'flex' : 'none';
-  if (btnMatin) { btnMatin.style.background = moment==='matin'?'var(--accent)':'transparent'; btnMatin.style.color = moment==='matin'?'#000':'var(--txt2)'; btnMatin.style.borderColor = moment==='matin'?'var(--accent)':'var(--border)'; }
-  if (btnSoir) { btnSoir.style.background = moment==='soir'?'var(--accent)':'transparent'; btnSoir.style.color = moment==='soir'?'#000':'var(--txt2)'; btnSoir.style.borderColor = moment==='soir'?'var(--accent)':'var(--border)'; }
-  S.seanceExercises = enrichTimerFromBanque(timer);
+  S.seanceExercises = enrichTimerFromBanque(w.timer);
   S.seanceIdx = 0;
-  S.seanceVal = (timer[0] && timer[0].duration) || 60;
+  S.seanceVal = (w.timer[0] && w.timer[0].duration) || 60;
   // Précharger les MP3 de la séance en arrière-plan
   preloadSeanceAudios(S.seanceExercises).catch(e => {});
   S.seanceRunning = false;
