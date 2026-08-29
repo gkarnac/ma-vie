@@ -450,6 +450,11 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <span class="seance-type-label" id="seance-type-label" style="margin:0;font-size:9px">—</span>
   </div>
+  <!-- Sélecteur Matin / Soir -->
+  <div id="split-matin-soir" style="display:none;gap:8px;justify-content:center;margin-bottom:8px">
+    <button id="btn-matin-soir-matin" onclick="selectSeanceDay(S.seanceDayIdx,'matin')" style="padding:6px 18px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#000;font-size:12px;cursor:pointer;font-weight:600">🌅 Matin</button>
+    <button id="btn-matin-soir-soir" onclick="selectSeanceDay(S.seanceDayIdx,'soir')" style="padding:6px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--txt2);font-size:12px;cursor:pointer">🌆 Soir</button>
+  </div>
   <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
     <button onclick="changeSeanceWeek(-1)" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--txt2);font-size:18px;cursor:pointer;padding:4px 10px;line-height:1">‹</button>
     <div class="day-sel-row" id="day-selector" style="flex:1;margin-bottom:0">
@@ -2969,16 +2974,35 @@ function applyDayButtons(idx) {
   });
 }
 
-function selectSeanceDay(idx) {
+function selectSeanceDay(idx, moment) {
   // Si un timer tourne, le stopper proprement avant de basculer
   if (S.seanceRunning) stbToggle(); // met en pause
   S.seanceDayIdx = idx;
   const dayNumEl = document.getElementById('seance-day-num');
   if (dayNumEl) dayNumEl.textContent = idx + 1;
   const w = effectiveWeekly()[idx];
-  S.seanceExercises = enrichTimerFromBanque(w.timer);
+  const dayConfig = DAY_CONFIG[idx];
+  const hasSplit = dayConfig && dayConfig.timerMatin && dayConfig.timerSoir && dayConfig.timerSoir.length > 0;
+  // Déterminer le moment (matin/soir)
+  if (!moment) moment = S.seanceMoment || (new Date().getHours() < 12 ? 'matin' : 'soir');
+  S.seanceMoment = moment;
+  // Choisir le bon timer
+  let timer;
+  if (hasSplit) {
+    timer = moment === 'soir' ? dayConfig.timerSoir : dayConfig.timerMatin;
+  } else {
+    timer = w.timer || dayConfig?.timer || [];
+  }
+  // Mettre à jour les boutons matin/soir
+  const btnMatin = document.getElementById('btn-matin-soir-matin');
+  const btnSoir = document.getElementById('btn-matin-soir-soir');
+  const splitRow = document.getElementById('split-matin-soir');
+  if (splitRow) splitRow.style.display = hasSplit ? 'flex' : 'none';
+  if (btnMatin) { btnMatin.style.background = moment==='matin'?'var(--accent)':'transparent'; btnMatin.style.color = moment==='matin'?'#000':'var(--txt2)'; btnMatin.style.borderColor = moment==='matin'?'var(--accent)':'var(--border)'; }
+  if (btnSoir) { btnSoir.style.background = moment==='soir'?'var(--accent)':'transparent'; btnSoir.style.color = moment==='soir'?'#000':'var(--txt2)'; btnSoir.style.borderColor = moment==='soir'?'var(--accent)':'var(--border)'; }
+  S.seanceExercises = enrichTimerFromBanque(timer);
   S.seanceIdx = 0;
-  S.seanceVal = (w.timer[0] && w.timer[0].duration) || 60;
+  S.seanceVal = (timer[0] && timer[0].duration) || 60;
   // Précharger les MP3 de la séance en arrière-plan
   preloadSeanceAudios(S.seanceExercises).catch(e => {});
   S.seanceRunning = false;
