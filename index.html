@@ -1821,13 +1821,14 @@ const PHYSIO_BASE = [
 // ── WEEKLY — 7 jours différenciés ────────────────────────────
 // Chaque jour a timerMatin (6h) et timerSoir (17h) + timer (fallback = matin)
 
+// Formes matin — timers silencieux (pas de narration)
+const _F = (nom, duree) => ({name:nom, speak:'', detail:'Veste lestée — forme complète', duration:duree, phase:'Formes', isRest:false});
+
 // Bloc physio WCT — commun à tous les matins
 const PHYSIO_WCT = [
   {name:"Physio WCT — Abduction + Flexion hanche", speak:'', detail:'Narration Aoede — abduction hanche × 3 séries + flexion hanche × 3 séries', duration:480, phase:'Physio WCT', isRest:false, isForce:true, forceFichier:'physio-wct-matin.mp3'},
 ];
 
-// Formes matin — timers silencieux (pas de narration)
-const _F = (nom, duree) => ({name:nom, speak:'', detail:'Veste lestée — forme complète', duration:duree, phase:'Formes', isRest:false});
 
 const WEEKLY = [
   { // Lundi
