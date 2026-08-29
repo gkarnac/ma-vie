@@ -1372,6 +1372,30 @@ function parseProgramme(rows) {
 
 // Construit un tableau WEEKLY à partir de S.programme + S.exercices.
 // Retourne null si S.programme est vide (fallback sur DAY_CONFIG).
+// ── Table de durées par défaut pour les exercices courants ──────
+const DUREES_DEFAUT = {
+  'planche':        35,
+  'bird-dog':       60,
+  'pont fessier':   50,
+  'dead bug':       50,
+  'gainage':        20,
+  'chin tuck':      45,
+  'rotation externe': 40,
+  'rotation interne': 40,
+  'étirement pectoraux': 40,
+  'pendule':        60,
+  'physio wct':     480,
+  'kicks':          300,
+};
+
+function getDureeDefaut(nom) {
+  const n = (nom || '').toLowerCase();
+  for (const [key, dur] of Object.entries(DUREES_DEFAUT)) {
+    if (n.includes(key)) return dur;
+  }
+  return 30; // fallback
+}
+
 function buildWeeklyFromSheet() {
   if (!S.programme.length || !S.exercices.length) return null;
   const banque = {};
@@ -1425,7 +1449,7 @@ function buildWeeklyFromSheet() {
         const ex = banque[item.id];
         if (!ex) return;
         const series = item.series || ex.series_defaut || 1;
-        const duree  = item.duree  || ex.duree_defaut  || 30;
+        const duree  = item.duree  || ex.duree_defaut  || getDureeDefaut(ex.nom) || 30;
         const pause  = item.pause  !== undefined ? item.pause : 20;
         for (let s = 1; s <= series; s++) {
           const label = series > 1 ? (s === 1 ? ex.nom : ex.nom + ', série ' + s) : ex.nom;
