@@ -2031,27 +2031,32 @@ const SPECIAL_PROGRAMS = {};
 function getWcProgram(type, moment) {
   // moment = 'matin' | 'soir' | undefined (auto selon l'heure)
   if (SPECIAL_PROGRAMS[type]) return SPECIAL_PROGRAMS[type];
-  const W = effectiveWeekly();
-  const day = W.find(d => d.type === type);
-  if (!day) return W[0].timerMatin || W[0].timer || [];
+  // Toujours chercher timerMatin/timerSoir dans DAY_CONFIG (source de vérité)
+  const dayConfig = DAY_CONFIG.find(d => d.type === type);
   // Déterminer le moment si non spécifié
   if (!moment) {
     const h = new Date().getHours();
     moment = h < 12 ? 'matin' : 'soir';
   }
-  if (moment === 'soir' && day.timerSoir && day.timerSoir.length > 0) return day.timerSoir;
-  if (day.timerMatin && day.timerMatin.length > 0) return day.timerMatin;
-  return day.timer || [];
+  if (dayConfig) {
+    if (moment === 'soir' && dayConfig.timerSoir && dayConfig.timerSoir.length > 0) return dayConfig.timerSoir;
+    if (dayConfig.timerMatin && dayConfig.timerMatin.length > 0) return dayConfig.timerMatin;
+    if (dayConfig.timer && dayConfig.timer.length > 0) return dayConfig.timer;
+  }
+  // Fallback sur effectiveWeekly
+  const W = effectiveWeekly();
+  const day = W.find(d => d.type === type);
+  if (day && day.timer && day.timer.length > 0) return day.timer;
+  return W[0].timerMatin || W[0].timer || [];
 }
 
 
 function renderWcTimer(seanceOrPlan) {
   const id = seanceOrPlan.id;
   const type = seanceOrPlan.type || seanceOrPlan.wc_type || 'Wing Chun — Sac';
-  // Détecter si ce jour a un split matin/soir
-  const W = effectiveWeekly();
-  const dayData = W.find(d => d.type === type);
-  const hasSplit = dayData && dayData.timerMatin && dayData.timerSoir;
+  // Détecter si ce jour a un split matin/soir — toujours depuis DAY_CONFIG (pas weeklyOverrides)
+  const dayData = DAY_CONFIG.find(d => d.type === type);
+  const hasSplit = dayData && dayData.timerMatin && dayData.timerSoir && dayData.timerSoir.length > 0;
   // Moment sélectionné — stocker dans S.wcTimers pour persister le choix
   const t = S.wcTimers[id] || {};
   const moment = t.moment || (new Date().getHours() < 12 ? 'matin' : 'soir');
