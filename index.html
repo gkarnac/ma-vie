@@ -2934,6 +2934,13 @@ function selectSeanceDay(idx, moment) {
   } else {
     // Soir : pas d'échauffement, pas de kicks, pas de physio WCT
     const COOLDOWN_BLOC = {name:"Retour au calme", speak:"", detail:"Narration Aoede en cours...", duration:600, phase:"Retour au calme", isRest:false, isForce:true, forceFichier:"cooldown.mp3"};
+    const ARMES_PAR_JOUR = [
+      [{name:"Baat Jaam Do — Tam Lê", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"}, {name:"Baat Jaam Do — Ip Man", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}],
+      [{name:"Muk Yan Jong — Tam Lê", speak:"", detail:"Forme complète", duration:900, phase:"Formes", isRest:false}],
+      [{name:"Luk Dim Boon Kwan — Tam Lê", speak:"", detail:"Forme complète", duration:600, phase:"Formes", isRest:false}],
+      [{name:"Baat Jaam Do — Tam Lê", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"}, {name:"Luk Dim Boon Kwan — Tam Lê", speak:"", detail:"Forme complète", duration:600, phase:"Formes", isRest:false}],
+    ];
+    const armesJour = ARMES_PAR_JOUR[idx] || [];
     timerSource = [
       ...(w.timer || []).filter(ex =>
         ex.phase !== 'Échauffement' &&
@@ -2942,6 +2949,9 @@ function selectSeanceDay(idx, moment) {
         ex.forceFichier !== 'physio-wct-matin.mp3' &&
         ex.forceFichier !== 'cooldown.mp3'
       ),
+      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
+      ...armesJour,
+      {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       COOLDOWN_BLOC
     ];
   }
