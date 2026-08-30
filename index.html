@@ -2937,8 +2937,10 @@ function selectSeanceDay(idx, moment) {
     timerSource = [
       ...(w.timer || []).filter(ex =>
         ex.phase !== 'Échauffement' &&
+        ex.phase !== 'Retour au calme' &&
         !ex.isKicks &&
-        ex.forceFichier !== 'physio-wct-matin.mp3'
+        ex.forceFichier !== 'physio-wct-matin.mp3' &&
+        ex.forceFichier !== 'cooldown.mp3'
       ),
       COOLDOWN_BLOC
     ];
