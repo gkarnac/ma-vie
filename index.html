@@ -1500,9 +1500,12 @@ function enrichTimerFromBanque(timer) {
   return timer.map(ex => {
     if (ex.isRest || !ex.name) return ex; // pauses : on touche pas
     // Corriger la durée si getDureeDefaut a une valeur pour cet exercice
-    const dureeCorrigee = getDureeDefaut(ex.name);
-    if (dureeCorrigee && dureeCorrigee !== 30) {
-      ex = Object.assign({}, ex, { duration: dureeCorrigee });
+    // Exception : les blocs narrés (forceFichier) gardent leur durée calée sur le MP3
+    if (!ex.forceFichier) {
+      const dureeCorrigee = getDureeDefaut(ex.name);
+      if (dureeCorrigee && dureeCorrigee !== 30) {
+        ex = Object.assign({}, ex, { duration: dureeCorrigee });
+      }
     }
     if (!S.exercices.length) return ex;
     const banque = findExercice(ex.name);
