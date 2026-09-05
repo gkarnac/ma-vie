@@ -2945,7 +2945,7 @@ function selectSeanceDay(idx, moment) {
     ];
     const armesJour = ARMES_PAR_JOUR[idx] || [];
     // Blocs force narratés pour le jeudi (idx=3)
-    const FORCE_JEUDI = idx === 3 ? [
+    const FORCE_JEUDI_ARR = [
       {name:"Punching Strength", speak:"", detail:"Circuit pompes explosives + tirages rapides — 4 rounds", duration:762, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-push-pull.mp3"},
       {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
       {name:"Kicking Strength", speak:"", detail:"Fentes stationnaires G+D — 3 rounds", duration:572, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-fentes.mp3"},
@@ -2953,7 +2953,23 @@ function selectSeanceDay(idx, moment) {
       {name:"Pont fessier unilatéral", speak:"", detail:"3 séries × 12 reps", duration:185, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-pont.mp3"},
       {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
       {name:"Gainage latéral", speak:"", detail:"2 sets G+D — 20s chaque", duration:153, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-gainage.mp3"},
-    ] : null;
+    ];
+
+    // Blocs force narratés pour le lundi (idx=0)
+    const FORCE_LUNDI_ARR = [
+      {name:"Pompes inclinées — barres Lebert", speak:"", detail:"3 séries × 12 reps shifting", duration:251, phase:"Force", isRest:false, isForce:true, forceFichier:"push-ups.mp3"},
+      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
+      {name:"Tirage incliné debout", speak:"", detail:"3 séries × 12 reps shifting", duration:254, phase:"Force", isRest:false, isForce:true, forceFichier:"tirage-horizontal.mp3"},
+      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
+      {name:"Fentes stationnaires — gauche et droite", speak:"", detail:"3 rounds × 15 reps chaque jambe", duration:572, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-fentes.mp3"},
+      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
+      {name:"Élévations Wing Chun", speak:"", detail:"Frontale talon, latérale side kick, en coupe bloquant", duration:304, phase:"Force", isRest:false, isForce:true, forceFichier:"elevations-wc.mp3"},
+    ];
+
+    // Exercices déjà couverts par un MP3 narré le lundi — retirés du timer pour éviter les doublons
+    const NARRE_LUNDI = ['pompes inclinees', 'tirage incline', 'fentes stationnaires',
+                         'elevation frontale talon', 'side kick', 'coupe bloquant'];
+    const normNom = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     // Filtre les exercices du timer soir (exclut échauffement, kicks, physio WCT, cooldown)
     const exSoir = (w.timer || []).filter(ex =>
@@ -2970,13 +2986,38 @@ function selectSeanceDay(idx, moment) {
       arr.push({name:"Pause", speak:"", detail:"", duration:dur, isRest:true, phase:"Pause"});
     }
 
-    const blocsForce = FORCE_JEUDI || exSoir;
+    // Supprime les pauses en tête et les pauses consécutives
+    function collapsePauses(arr) {
+      const out = [];
+      for (const e of arr) {
+        if (e.isRest && (out.length === 0 || out[out.length - 1].isRest)) continue;
+        out.push(e);
+      }
+      return out;
+    }
+
+    let blocsForce, resteSoir = [];
+    if (idx === 3) {
+      blocsForce = FORCE_JEUDI_ARR;
+    } else if (idx === 0) {
+      blocsForce = FORCE_LUNDI_ARR;
+      resteSoir = exSoir.filter(ex =>
+        ex.isRest || !NARRE_LUNDI.some(k => normNom(ex.name).includes(k))
+      );
+    } else {
+      blocsForce = exSoir;
+    }
+
     const timerArr = [...blocsForce];
+    if (resteSoir.length) {
+      addPause(timerArr, 30);
+      timerArr.push(...resteSoir);
+    }
     addPause(timerArr, 30);
     timerArr.push(...armesJour);
     addPause(timerArr, 20);
     timerArr.push(COOLDOWN_BLOC);
-    timerSource = timerArr;
+    timerSource = collapsePauses(timerArr);
   }
   S.seanceExercises = enrichTimerFromBanque(timerSource);
   S.seanceIdx = 0;
