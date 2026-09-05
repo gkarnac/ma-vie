@@ -2941,19 +2941,39 @@ function selectSeanceDay(idx, moment) {
       [{name:"Baat Jaam Do — Tam Lê", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"}, {name:"Luk Dim Boon Kwan — Tam Lê", speak:"", detail:"Forme complète", duration:600, phase:"Formes", isRest:false}],
     ];
     const armesJour = ARMES_PAR_JOUR[idx] || [];
-    timerSource = [
-      ...(w.timer || []).filter(ex =>
-        ex.phase !== 'Échauffement' &&
-        ex.phase !== 'Retour au calme' &&
-        !ex.isKicks &&
-        ex.forceFichier !== 'physio-wct-matin.mp3' &&
-        ex.forceFichier !== 'cooldown.mp3'
-      ),
+    // Blocs force narratés pour le jeudi (idx=3)
+    const FORCE_JEUDI = idx === 3 ? [
+      {name:"Punching Strength", speak:"", detail:"Circuit pompes explosives + tirages rapides — 4 rounds", duration:762, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-push-pull.mp3"},
       {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
-      ...armesJour,
+      {name:"Kicking Strength", speak:"", detail:"Fentes stationnaires G+D — 3 rounds", duration:675, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-fentes.mp3"},
+      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
+      {name:"Pont fessier unilatéral", speak:"", detail:"3 séries × 12 reps", duration:432, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-pont.mp3"},
       {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
-      COOLDOWN_BLOC
-    ];
+      {name:"Gainage latéral", speak:"", detail:"2 sets G+D — 20s chaque", duration:357, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-gainage.mp3"},
+    ] : null;
+
+    // Filtre les exercices du timer soir (exclut échauffement, kicks, physio WCT, cooldown)
+    const exSoir = (w.timer || []).filter(ex =>
+      ex.phase !== 'Échauffement' &&
+      ex.phase !== 'Retour au calme' &&
+      !ex.isKicks &&
+      ex.forceFichier !== 'physio-wct-matin.mp3' &&
+      ex.forceFichier !== 'cooldown.mp3'
+    );
+
+    // Helper : ajouter une pause seulement si le dernier bloc n'est pas déjà une pause
+    function addPause(arr, dur) {
+      if (arr.length > 0 && arr[arr.length - 1].isRest) return;
+      arr.push({name:"Pause", speak:"", detail:"", duration:dur, isRest:true, phase:"Pause"});
+    }
+
+    const blocsForce = FORCE_JEUDI || exSoir;
+    const timerArr = [...blocsForce];
+    addPause(timerArr, 30);
+    timerArr.push(...armesJour);
+    addPause(timerArr, 20);
+    timerArr.push(COOLDOWN_BLOC);
+    timerSource = timerArr;
   }
   S.seanceExercises = enrichTimerFromBanque(timerSource);
   S.seanceIdx = 0;
@@ -4390,7 +4410,13 @@ function logToTimer(log) {
     'yoga — iyengar':  'dimanche-yoga.mp3',
     'iyengar':         'dimanche-yoga.mp3',
     'physio wct':      'physio-wct-matin.mp3',
-    'physio west coast': 'physio-wct-matin.mp3'
+    'physio west coast': 'physio-wct-matin.mp3',
+    'punching strength': 'jeudi-push-pull.mp3',
+    'push pull':       'jeudi-push-pull.mp3',
+    'kicking strength': 'jeudi-fentes.mp3',
+    'fentes stationnaires': 'jeudi-fentes.mp3',
+    'pont fessier unilatéral': 'jeudi-pont.mp3',
+    'gainage latéral jeudi': 'jeudi-gainage.mp3'
   };
 
   const injectedAudios = new Set();
