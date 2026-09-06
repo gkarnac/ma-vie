@@ -3017,10 +3017,19 @@ function selectSeanceDay(idx, moment) {
       blocsForce = exSoir;
     }
 
-    const timerArr = [...blocsForce];
-    if (resteSoir.length) {
+    // Les formes (armes, mannequin) ne viennent que de ARMES_PAR_JOUR :
+    // on retire du timer tout doublon portant le même nom de forme.
+    const baseNom = s => normNom(s).split(/[—–-]/)[0].trim();
+    const armesBases = armesJour.filter(a => !a.isRest).map(a => baseNom(a.name));
+    const sansDoublonArmes = arr => arr.filter(ex =>
+      ex.isRest || !armesBases.includes(baseNom(ex.name))
+    );
+
+    const timerArr = [...sansDoublonArmes(blocsForce)];
+    const resteFiltre = sansDoublonArmes(resteSoir);
+    if (resteFiltre.length) {
       addPause(timerArr, 30);
-      timerArr.push(...resteSoir);
+      timerArr.push(...resteFiltre);
     }
     addPause(timerArr, 30);
     timerArr.push(...armesJour);
