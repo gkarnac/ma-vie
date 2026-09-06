@@ -2964,9 +2964,15 @@ function selectSeanceDay(idx, moment) {
       {name:"Élévations Wing Chun", speak:"", detail:"Frontale talon, latérale side kick, en coupe bloquant", duration:304, phase:"Force", isRest:false, isForce:true, forceFichier:"elevations-wc.mp3"},
     ];
 
+    // Bloc gainage narré pour le mardi (idx=1)
+    const FORCE_MARDI_ARR = [
+      {name:"Circuit gainage", speak:"", detail:"Hollow body, levées de jambes, dead bug — 3 rounds", duration:526, phase:"Force", isRest:false, isForce:true, forceFichier:"core-circuit.mp3"},
+    ];
+
     // Exercices déjà couverts par un MP3 narré le lundi — retirés du timer pour éviter les doublons
     const NARRE_LUNDI = ['pompes inclinees', 'tirage incline', 'fentes stationnaires',
                          'elevation frontale talon', 'side kick', 'coupe bloquant'];
+    const NARRE_MARDI = ['hollow', 'levees de jambes', 'dead bug'];
     const normNom = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     // Filtre les exercices du timer soir (exclut échauffement, kicks, physio WCT, cooldown)
@@ -3001,6 +3007,11 @@ function selectSeanceDay(idx, moment) {
       blocsForce = FORCE_LUNDI_ARR;
       resteSoir = exSoir.filter(ex =>
         ex.isRest || !NARRE_LUNDI.some(k => normNom(ex.name).includes(k))
+      );
+    } else if (idx === 1) {
+      blocsForce = FORCE_MARDI_ARR;
+      resteSoir = exSoir.filter(ex =>
+        ex.isRest || !NARRE_MARDI.some(k => normNom(ex.name).includes(k))
       );
     } else {
       blocsForce = exSoir;
