@@ -2927,9 +2927,16 @@ function selectSeanceDay(idx, moment) {
   const w = effectiveWeekly()[idx];
   const dayConfig = DAY_CONFIG[idx];
   const hasSplit = dayConfig && dayConfig.timerMatin && dayConfig.timerMatin.length > 0;
-  // Moment : matin avant midi, soir après midi, ou choix manuel
-  if (!moment) moment = S.seanceMoment || (new Date().getHours() < 12 ? 'matin' : 'soir');
+  // Moment : matin avant midi, soir après midi, ou choix manuel.
+  // Le choix manuel n'est réutilisé que s'il date d'aujourd'hui : sinon l'app
+  // rouvrait en 'soir' le lendemain matin et enchaînait échauffement + séance du soir.
+  const ajd = new Date().toISOString().slice(0, 10);
+  if (!moment) {
+    const memoValide = S.seanceMoment && S.seanceMomentDate === ajd;
+    moment = memoValide ? S.seanceMoment : (new Date().getHours() < 12 ? 'matin' : 'soir');
+  }
   S.seanceMoment = moment;
+  S.seanceMomentDate = ajd;
   // Choisir le bon timer
   let timerSource;
   if (hasSplit && moment === 'matin') {
