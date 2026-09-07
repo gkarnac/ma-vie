@@ -4619,6 +4619,34 @@ async function _acceptPlanInner(btn) {
     }
   }
 
+  // Un patch venant du Coach peut donner la durée en texte ("12:42", "45s",
+  // "30min") au lieu d'un nombre de secondes. Sans normalisation, ex.duration
+  // est undefined et le timer affiche NaN:NaN puis se bloque en pause.
+  function dureeVersSecondes(v) {
+    if (typeof v === 'number' && isFinite(v)) return Math.round(v);
+    if (typeof v !== 'string') return null;
+    const t = v.trim().toLowerCase();
+    let m = t.match(/^(\d+):(\d{1,2})$/);              // 12:42
+    if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
+    m = t.match(/^(\d+)\s*m(in)?$/);                    // 30min
+    if (m) return parseInt(m[1]) * 60;
+    m = t.match(/^(\d+)\s*s(ec)?$/);                    // 45s
+    if (m) return parseInt(m[1]);
+    m = t.match(/^(\d+)$/);                             // 45
+    if (m) return parseInt(m[1]);
+    return null;
+  }
+
+  function normTimerEntry(ex) {
+    const e = Object.assign({}, ex);
+    if (!isFinite(e.duration)) {
+      const s = dureeVersSecondes(e.duration) ?? dureeVersSecondes(e.d) ?? null;
+      e.duration = s !== null ? s : 30;   // repli sûr plutôt que NaN
+    }
+    if (!e.name && e.n) e.name = e.n;
+    return e;
+  }
+
   // ─── Appliquer les ajustements WEEKLY
   let weeklyChanged = 0;
   if (weekly) {
@@ -4632,7 +4660,7 @@ async function _acceptPlanInner(btn) {
       // Patcher : on garde label/color, on écrase type/timer/log si fournis
       if (patch.type) base[i].type = patch.type;
       if (Array.isArray(patch.timer)) {
-        base[i].timer = patch.timer;
+        base[i].timer = patch.timer.map(normTimerEntry);
       } else if (Array.isArray(patch.log) && patch.log.length) {
         base[i].timer = logToTimer(patch.log);
       }
