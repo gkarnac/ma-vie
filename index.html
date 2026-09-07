@@ -2925,161 +2925,244 @@ function applyDayButtons(idx) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  TABLE DES SÉANCES — SOURCE UNIQUE
+//  Une entrée par jour et par moment. Ce qui est écrit ici est
+//  exactement ce qui joue. Aucun filtre, aucune fusion, aucun fallback.
+//
+//  Trois formes de bloc, rien d'autre :
+//    { mp3:'fichier.mp3', nom:'...', duree:N }  narration guidée
+//    { timer:'Nom', duree:N }                   décompte simple
+//    { pause:N }                                repos
+//
+//  Les durées des MP3 sont mesurées avec ffprobe (scripts/seances.py).
+//  Ne jamais les estimer.
+// ═══════════════════════════════════════════════════════════════════
+
+const COIFFE = [
+  { timer:'Rotation externe — gauche',   duree:45 }, { pause:15 },
+  { timer:'Rotation externe — droite',   duree:45 }, { pause:15 },
+  { timer:'Rotation interne — gauche',   duree:45 }, { pause:15 },
+  { timer:'Rotation interne — droite',   duree:45 }, { pause:15 },
+  { timer:'Élévation latérale — gauche', duree:40 }, { pause:15 },
+  { timer:'Élévation latérale — droite', duree:40 }, { pause:15 },
+  { timer:'Trapèzes en Y',               duree:40 }, { pause:15 },
+  { timer:'Trapèzes en T',               duree:40 },
+];
+
+const SEANCES = {
+  // ── LUNDI ────────────────────────────────────────────────────────
+  '0-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Siu Lim Tao — Tam Lê', duree:420, detail:'Sans veste — forme complète' },
+    { pause:20 },
+    { timer:'Chum Kiu — Tam Lê',    duree:420, detail:'Sans veste — forme complète' },
+    { pause:30 },
+    { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
+  ],
+  '0-soir': [
+    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763 },
+    { pause:30 },
+    { mp3:'jeudi-fentes.mp3',    nom:'Fentes stationnaires G+D',  duree:572 },
+    { pause:30 },
+    ...COIFFE,
+    { pause:30 },
+    { timer:'Baat Jaam Do — Tam Lê', duree:420 },
+    { pause:20 },
+    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+  ],
+
+  // ── MARDI ────────────────────────────────────────────────────────
+  '1-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Biu Jee — Tam Lê', duree:420, detail:'Veste lestée — forme complète' },
+    { pause:30 },
+    { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
+  ],
+  '1-soir': [
+    { mp3:'core-circuit.mp3', nom:'Circuit gainage', duree:526 },
+    { pause:30 },
+    { timer:'Pendule de Codman — gauche', duree:60 },
+    { pause:15 },
+    { timer:'Pendule de Codman — droite', duree:60 },
+    { pause:30 },
+    { mp3:'elevations-wc.mp3', nom:'Élévations Wing Chun', duree:304 },
+    { pause:30 },
+    { timer:'Muk Yan Jong — Tam Lê', duree:720 },
+    { pause:20 },
+    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+  ],
+
+  // ── MERCREDI ─────────────────────────────────────────────────────
+  '2-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Wing Chun Tong — Denis Shink', duree:420, detail:'Sans veste — forme complète' },
+    { pause:20 },
+    { timer:'Siu Lim Tao — Ip Man',         duree:420, detail:'Sans veste — forme complète' },
+    { pause:30 },
+    { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
+  ],
+  '2-soir': [
+    { timer:'Cardio Zone 2', duree:1800, detail:'Course ou marche rapide — 129 à 141 bpm' },
+    { pause:30 },
+    { timer:'Chin tuck', duree:45 },
+    { pause:15 },
+    { timer:'Chin tuck', duree:45 },
+    { pause:15 },
+    { timer:'Chin tuck', duree:45 },
+    { pause:30 },
+    { timer:'Mobilité thoracique — rotation',  duree:60 },
+    { pause:15 },
+    { timer:'Mobilité thoracique — extension', duree:45 },
+    { pause:30 },
+    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+  ],
+
+  // ── JEUDI ────────────────────────────────────────────────────────
+  '3-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Siu Lim Tao — Chan Wah Shan', duree:420, detail:'Veste lestée — forme complète' },
+    { pause:30 },
+    { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
+  ],
+  '3-soir': [
+    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763 },
+    { pause:30 },
+    { mp3:'jeudi-pont.mp3',      nom:'Pont fessier unilatéral',   duree:185 },
+    { pause:20 },
+    { mp3:'jeudi-gainage.mp3',   nom:'Gainage latéral G+D',       duree:153 },
+    { pause:30 },
+    ...COIFFE,
+    { pause:30 },
+    { timer:'Luk Dim Boon Kwan — Tam Lê', duree:600 },
+    { pause:20 },
+    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+  ],
+
+  // ── VENDREDI ─────────────────────────────────────────────────────
+  '4-matin': [
+    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+  ],
+  '4-soir': [
+    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+  ],
+
+  // ── SAMEDI ───────────────────────────────────────────────────────
+  '5-matin': [
+    { timer:'Rando 9-10 km — sac 4,5 kg', duree:5400, detail:'Zone 2 · noter la tension cervicale à 1h' },
+    { pause:30 },
+    { timer:'Luk Dim Boon Kwan — Tam Lê', duree:600, detail:'Léger, après la rando' },
+  ],
+  '5-soir': [
+    { timer:'Rando 9-10 km — sac 4,5 kg', duree:5400, detail:'Zone 2 · noter la tension cervicale à 1h' },
+    { pause:30 },
+    { timer:'Luk Dim Boon Kwan — Tam Lê', duree:600, detail:'Léger, après la rando' },
+  ],
+
+  // ── DIMANCHE ─────────────────────────────────────────────────────
+  '6-matin': [
+    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+  ],
+  '6-soir': [
+    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+  ],
+};
+
+const TYPES_SEANCE = [
+  'Force — Push/Pull + Coiffe',
+  'Gainage + Muk Yan Jong',
+  'Cardio Z2 + Mobilité cervicale',
+  'Force — Push/Pull + Gainage',
+  'Yoga — Iyengar Leçon 1',
+  'Rando Phase 1',
+  'Yoga — Iyengar Leçon 1',
+];
+
+// Liste pour le journal de fin de séance, dérivée de la table elle-même.
+function logDuJour(idx, moment) {
+  const t = SEANCES[idx + '-' + moment] || [];
+  return t.filter(b => b.pause === undefined)
+          .map(b => ({ n: b.mp3 ? b.nom : b.timer,
+                       s: 1,
+                       d: Math.floor(b.duree / 60) + ':' + String(b.duree % 60).padStart(2, '0') }));
+}
+
+// Les jours qui ont une vraie séparation matin/soir affichent les boutons.
+const JOURS_AVEC_SPLIT = [0, 1, 2, 3];
+
+// Développe un bloc de la table en objet exercice pour le lecteur.
+function blocVersExercice(b) {
+  if (b.pause !== undefined) {
+    return { name:'Pause', speak:'', detail:'', duration:b.pause, isRest:true, phase:'Pause' };
+  }
+  if (b.mp3) {
+    return { name:b.nom, speak:'', detail:b.detail || '', duration:b.duree,
+             isRest:false, isForce:true, forceFichier:b.mp3, phase:'Guidé' };
+  }
+  return { name:b.timer, speak:'', detail:b.detail || '', duration:b.duree,
+           isRest:false, phase:'Exercice' };
+}
+
+function seanceDuJour(idx, moment) {
+  const table = SEANCES[idx + '-' + moment] || SEANCES[idx + '-soir'] || [];
+  return table.map(blocVersExercice);
+}
+
+function dureeSeance(idx, moment) {
+  return (SEANCES[idx + '-' + moment] || []).reduce(
+    (t, b) => t + (b.pause !== undefined ? b.pause : b.duree), 0);
+}
+
+
 function selectSeanceDay(idx, moment) {
-  // Si un timer tourne, le stopper proprement avant de basculer
-  if (S.seanceRunning) stbToggle(); // met en pause
+  if (S.seanceRunning) stbToggle();
   S.seanceDayIdx = idx;
   const dayNumEl = document.getElementById('seance-day-num');
   if (dayNumEl) dayNumEl.textContent = idx + 1;
-  const w = effectiveWeekly()[idx];
-  const dayConfig = DAY_CONFIG[idx];
-  const hasSplit = dayConfig && dayConfig.timerMatin && dayConfig.timerMatin.length > 0;
-  // Moment : matin avant midi, soir après midi, ou choix manuel.
-  // Le choix manuel n'est réutilisé que s'il date d'aujourd'hui : sinon l'app
-  // rouvrait en 'soir' le lendemain matin et enchaînait échauffement + séance du soir.
+
+  // Moment : le choix manuel n'est réutilisé que s'il date d'aujourd'hui.
   const ajd = new Date().toISOString().slice(0, 10);
   if (!moment) {
     const memoValide = S.seanceMoment && S.seanceMomentDate === ajd;
     moment = memoValide ? S.seanceMoment : (new Date().getHours() < 12 ? 'matin' : 'soir');
   }
+  if (!JOURS_AVEC_SPLIT.includes(idx)) moment = 'soir';
   S.seanceMoment = moment;
   S.seanceMomentDate = ajd;
-  // Choisir le bon timer
-  let timerSource;
-  if (hasSplit && moment === 'matin') {
-    timerSource = dayConfig.timerMatin;
-  } else {
-    // Soir : pas d'échauffement, pas de kicks, pas de physio WCT
-    const COOLDOWN_BLOC = {name:"Retour au calme", speak:"", detail:"Narration Aoede en cours...", duration:600, phase:"Retour au calme", isRest:false, isForce:true, forceFichier:"cooldown.mp3"};
-    const ARMES_PAR_JOUR = [
-      [{name:"Baat Jaam Do — Tam Lê", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"}, {name:"Baat Jaam Do — Ip Man", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}],
-      [{name:"Muk Yan Jong — Tam Lê", speak:"", detail:"Forme complète", duration:900, phase:"Formes", isRest:false}],
-      [{name:"Luk Dim Boon Kwan — Tam Lê", speak:"", detail:"Forme complète", duration:600, phase:"Formes", isRest:false}],
-      [{name:"Baat Jaam Do — Tam Lê", speak:"", detail:"Forme complète", duration:420, phase:"Formes", isRest:false}, {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"}, {name:"Luk Dim Boon Kwan — Tam Lê", speak:"", detail:"Forme complète", duration:600, phase:"Formes", isRest:false}],
-    ];
-    const armesJour = ARMES_PAR_JOUR[idx] || [];
-    // Blocs force narratés pour le jeudi (idx=3)
-    const FORCE_JEUDI_ARR = [
-      {name:"Punching Strength", speak:"", detail:"Circuit pompes explosives + tirages rapides — 4 rounds", duration:762, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-push-pull.mp3"},
-      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
-      {name:"Kicking Strength", speak:"", detail:"Fentes stationnaires G+D — 3 rounds", duration:572, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-fentes.mp3"},
-      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
-      {name:"Pont fessier unilatéral", speak:"", detail:"3 séries × 12 reps", duration:185, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-pont.mp3"},
-      {name:"Pause", speak:"", detail:"", duration:20, isRest:true, phase:"Pause"},
-      {name:"Gainage latéral", speak:"", detail:"2 sets G+D — 20s chaque", duration:153, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-gainage.mp3"},
-    ];
 
-    // Blocs force narratés pour le lundi (idx=0)
-    const FORCE_LUNDI_ARR = [
-      {name:"Circuit pompes et tirages", speak:"", detail:"Alternance pompes + tirages — 4 rounds, repos 45 s", duration:762, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-push-pull.mp3"},
-      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
-      {name:"Fentes stationnaires — gauche et droite", speak:"", detail:"3 rounds × 15 reps chaque jambe", duration:572, phase:"Force", isRest:false, isForce:true, forceFichier:"jeudi-fentes.mp3"},
-      {name:"Pause", speak:"", detail:"", duration:30, isRest:true, phase:"Pause"},
-      {name:"Élévations Wing Chun", speak:"", detail:"Frontale talon, latérale side kick, en coupe bloquant", duration:304, phase:"Force", isRest:false, isForce:true, forceFichier:"elevations-wc.mp3"},
-    ];
-
-    // Bloc gainage narré pour le mardi (idx=1)
-    const FORCE_MARDI_ARR = [
-      {name:"Circuit gainage", speak:"", detail:"Hollow body, levées de jambes, dead bug — 3 rounds", duration:526, phase:"Force", isRest:false, isForce:true, forceFichier:"core-circuit.mp3"},
-    ];
-
-    // Exercices déjà couverts par un MP3 narré le lundi — retirés du timer pour éviter les doublons
-    const NARRE_LUNDI = ['pompes inclinees', 'tirage incline', 'fentes stationnaires',
-                         'elevation frontale talon', 'side kick', 'coupe bloquant'];
-    const NARRE_MARDI = ['hollow', 'levees de jambes', 'dead bug'];
-    const normNom = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-    // Filtre les exercices du timer soir (exclut échauffement, kicks, physio WCT, cooldown)
-    const exSoir = (w.timer || []).filter(ex =>
-      ex.phase !== 'Échauffement' &&
-      ex.phase !== 'Retour au calme' &&
-      !ex.isKicks &&
-      ex.forceFichier !== 'physio-wct-matin.mp3' &&
-      ex.forceFichier !== 'cooldown.mp3'
-    );
-
-    // Helper : ajouter une pause seulement si le dernier bloc n'est pas déjà une pause
-    function addPause(arr, dur) {
-      if (arr.length > 0 && arr[arr.length - 1].isRest) return;
-      arr.push({name:"Pause", speak:"", detail:"", duration:dur, isRest:true, phase:"Pause"});
-    }
-
-    // Supprime les pauses en tête et les pauses consécutives
-    function collapsePauses(arr) {
-      const out = [];
-      for (const e of arr) {
-        if (e.isRest && (out.length === 0 || out[out.length - 1].isRest)) continue;
-        out.push(e);
-      }
-      return out;
-    }
-
-    let blocsForce, resteSoir = [];
-    if (idx === 3) {
-      blocsForce = FORCE_JEUDI_ARR;
-    } else if (idx === 0) {
-      blocsForce = FORCE_LUNDI_ARR;
-      resteSoir = exSoir.filter(ex =>
-        ex.isRest || !NARRE_LUNDI.some(k => normNom(ex.name).includes(k))
-      );
-    } else if (idx === 1) {
-      blocsForce = FORCE_MARDI_ARR;
-      resteSoir = exSoir.filter(ex =>
-        ex.isRest || !NARRE_MARDI.some(k => normNom(ex.name).includes(k))
-      );
-    } else {
-      blocsForce = exSoir;
-    }
-
-    // Les formes (armes, mannequin) ne viennent que de ARMES_PAR_JOUR :
-    // on retire du timer tout doublon portant le même nom de forme.
-    const baseNom = s => normNom(s).split(/[—–-]/)[0].trim();
-    const armesBases = armesJour.filter(a => !a.isRest).map(a => baseNom(a.name));
-    const sansDoublonArmes = arr => arr.filter(ex =>
-      ex.isRest || !armesBases.includes(baseNom(ex.name))
-    );
-
-    const timerArr = [...sansDoublonArmes(blocsForce)];
-    const resteFiltre = sansDoublonArmes(resteSoir);
-    if (resteFiltre.length) {
-      addPause(timerArr, 30);
-      timerArr.push(...resteFiltre);
-    }
-    addPause(timerArr, 30);
-    timerArr.push(...armesJour);
-    addPause(timerArr, 20);
-    timerArr.push(COOLDOWN_BLOC);
-    timerSource = collapsePauses(timerArr);
-  }
-  S.seanceExercises = enrichTimerFromBanque(timerSource);
+  // Une seule source : la table SEANCES.
+  S.seanceExercises = seanceDuJour(idx, moment);
   S.seanceIdx = 0;
-  S.seanceVal = (timerSource[0] && timerSource[0].duration) || 60;
-  // Mettre à jour les boutons
-  const splitRow = document.getElementById('split-matin-soir');
-  if (splitRow) splitRow.style.display = hasSplit ? 'flex' : 'none';
-  ['matin','soir'].forEach(m => {
-    const btn = document.getElementById('btn-moment-' + m);
-    if (btn) {
-      btn.style.background = m === moment ? 'var(--accent)' : 'transparent';
-      btn.style.color = m === moment ? '#000' : 'var(--txt2)';
-      btn.style.borderColor = m === moment ? 'var(--accent)' : 'var(--border)';
-    }
-  });
-  // Précharger les MP3 de la séance en arrière-plan
+  S.seanceVal = S.seanceExercises.length ? S.seanceExercises[0].duration : 0;
+
   preloadSeanceAudios(S.seanceExercises).catch(e => {});
   S.seanceRunning = false;
   S.seanceSpoken = false;
   clearInterval(S.seanceInterval);
   applyDayButtons(idx);
+
+  const cfg = DAY_CONFIG[idx] || {};
   const lbl = document.getElementById('seance-type-label');
-  // Drapeau si le Coach a patché ce jour
-  const isPatched = S.weeklyOverrides && S.weeklyOverrides.length === 7 &&
-    (S.weeklyOverrides[idx].type !== DAY_CONFIG[idx].type);
-  lbl.innerHTML = (isPatched ? '<span style="color:var(--amber);margin-right:6px" title="Ajusté par le Coach">⚙️</span>' : '') + w.type;
-  lbl.style.color = w.color;
-  document.getElementById('stb-play').textContent = '▶ GO';
+  if (lbl) {
+    lbl.innerHTML = TYPES_SEANCE[idx] || cfg.type || '';
+    lbl.style.color = cfg.color || '';
+  }
+  const btn = document.getElementById('stb-play');
+  if (btn) btn.textContent = '▶ GO';
   stbRender();
-  renderExLog(w.log);
+  renderExLog(logDuJour(idx, moment));
   buildRpeGrid();
   releaseWakeLock();
 }
@@ -4665,16 +4748,10 @@ async function _acceptPlanInner(btn) {
       const patch = weekly[days[i]];
       if (!patch) continue;
       // Patcher : on garde label/color, on écrase type/timer/log si fournis
+      // Les séances viennent de la table SEANCES et ne sont plus modifiables
+      // par un plan collé : c'est ce mécanisme qui cassait les circuits narrés.
+      // Le Coach ne sert plus qu'aux engagements et au libellé du jour.
       if (patch.type) base[i].type = patch.type;
-      if (Array.isArray(patch.timer)) {
-        base[i].timer = patch.timer.map(normTimerEntry);
-      } else if (Array.isArray(patch.log) && patch.log.length &&
-                 !(base[i].timer && base[i].timer.length)) {
-        // Le log sert au journal. Il ne reconstruit le timer que si le jour n'en
-        // a pas : sinon un plan qui ne fournit qu'un log écrasait les blocs
-        // narrés et la séparation matin/soir.
-        base[i].timer = logToTimer(patch.log);
-      }
       if (Array.isArray(patch.log)) base[i].log = patch.log;
       weeklyChanged++;
     }
