@@ -1984,17 +1984,24 @@ function effectiveWeekly() {
     result[6] = DAY_CONFIG[6]; // Dimanche toujours Yoga Iyengar Aoede
     return result;
   }
-  // Utiliser le programme du Sheet si disponible
-  const fromSheet = buildWeeklyFromSheet();
-  if (fromSheet) return fromSheet;
-  // Fallback sur DAY_CONFIG (programme codé en dur)
-  return DAY_CONFIG.map(cfg => ({
+  // DAY_CONFIG est prioritaire sur le Sheet : c'est lui qui porte timerMatin,
+  // les phases et les blocs narrés (forceFichier). L'onglet Programme du Sheet
+  // date d'un programme antérieur ; s'il passe devant, la séparation matin/soir
+  // disparaît et le soir rejoue l'échauffement du matin sans les MP3.
+  const base = DAY_CONFIG.map(cfg => ({
     label: cfg.label,
     type:  cfg.type,
     color: cfg.color,
     timer: cfg.timer || [],
+    timerMatin: cfg.timerMatin || [],
     log:   cfg.log   || []
   }));
+  const aDesBlocs = base.some(d => (d.timer && d.timer.length) || (d.timerMatin && d.timerMatin.length));
+  if (aDesBlocs) return base;
+  // Sheet en dernier recours seulement
+  const fromSheet = buildWeeklyFromSheet();
+  if (fromSheet) return fromSheet;
+  return base;
 }
 
 // buildSeance(idx) — compatibilité avec les références existantes
@@ -4661,7 +4668,11 @@ async function _acceptPlanInner(btn) {
       if (patch.type) base[i].type = patch.type;
       if (Array.isArray(patch.timer)) {
         base[i].timer = patch.timer.map(normTimerEntry);
-      } else if (Array.isArray(patch.log) && patch.log.length) {
+      } else if (Array.isArray(patch.log) && patch.log.length &&
+                 !(base[i].timer && base[i].timer.length)) {
+        // Le log sert au journal. Il ne reconstruit le timer que si le jour n'en
+        // a pas : sinon un plan qui ne fournit qu'un log écrasait les blocs
+        // narrés et la séparation matin/soir.
         base[i].timer = logToTimer(patch.log);
       }
       if (Array.isArray(patch.log)) base[i].log = patch.log;
