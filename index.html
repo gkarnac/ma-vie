@@ -1378,150 +1378,11 @@ function parseProgramme(rows) {
   }));
 }
 
-// Construit un tableau WEEKLY à partir de S.programme + S.exercices.
-// Retourne null si S.programme est vide (fallback sur DAY_CONFIG).
-// ── Table de durées par défaut pour les exercices courants ──────
-const DUREES_DEFAUT = {
-  'planche':        35,
-  'bird-dog':       60,
-  'pont fessier':   50,
-  'dead bug':       50,
-  'gainage':        20,
-  'chin tuck':      45,
-  'rotation externe': 40,
-  'rotation interne': 40,
-  'étirement pectoraux': 40,
-  'pendule':        60,
-  'physio wct':     480,
-  'kicks':          300,
-};
-
-function getDureeDefaut(nom) {
-  const n = (nom || '').toLowerCase();
-  for (const [key, dur] of Object.entries(DUREES_DEFAUT)) {
-    if (n.includes(key)) return dur;
-  }
-  return 30; // fallback
-}
-
-function buildWeeklyFromSheet() {
-  if (!S.programme.length || !S.exercices.length) return null;
-  const banque = {};
-  S.exercices.forEach(e => { banque[e.id] = e; });
-
-  // Exercices spéciaux non dans la banque (cardio, yoga, etc.)
-  const SPECIAUX = {
-    'marche-douce': {
-      name:'Marche douce — 10 min', phase:'Cardio',
-      speak:'Marche douce pendant 10 minutes. Rythme très léger, récupération active. Pas d\'essoufflement.',
-      detail:'Rythme très léger — récupération, pas d\'effort', duration:600
-    },
-    'tapis-z2': {
-      name:'Tapis roulant / marche rapide — 20 min', phase:'Cardio',
-      speak:'Tapis roulant ou marche rapide, 20 minutes. Zone Z2, entre 131 et 142 battements. Ta Garmin enregistre pour le VO₂ max.',
-      detail:'Z2 : 131-142 bpm — rythme soutenu mais confortable', duration:1200
-    },
-    'recuperation-cardio': {
-      name:'Récupération — 3 min', phase:'Cardio',
-      speak:'Ralentis progressivement. Marche tranquille trois minutes pour récupérer.',
-      detail:'Marche lente — laisse la FC redescendre', duration:180
-    },
-    'yoga-iyengar-1': null  // Le yoga reste en dur dans DAY_CONFIG[6]
-  };
-
-  // COOLDOWN_SHEET supprimé — le cooldown est maintenant dans exercices_json du Sheet, spécifique à chaque séance
-
-  const weekly = S.programme
-    .slice()
-    .sort((a, b) => a.jour - b.jour)
-    .map(jour => {
-      // Vendredi (jour 4) et Dimanche (jour 6) : yoga en dur
-      if (jour.jour === 4 || jour.jour === 6) return null;
-
-      let exJson = [];
-      try { exJson = JSON.parse(jour.exercices_json); } catch(e) {}
-
-      const timer = [...PHYSIO_BASE, _R(20)]; // pause de transition après l'échauffement
-      const logItems = [];
-
-      exJson.forEach(item => {
-        const special = SPECIAUX[item.id];
-        if (special === null) return; // yoga : ignoré ici
-        if (special) {
-          // Exercice spécial non dans la banque
-          if (item.pause && item.pause > 0) timer.push(_R(item.pause));
-          timer.push(Object.assign({}, special));
-          logItems.push({n: special.name, s: item.series || 1, d: special.duration + 's'});
-          return;
-        }
-        const ex = banque[item.id];
-        if (!ex) return;
-        const series = item.series || ex.series_defaut || 1;
-        const duree  = getDureeDefaut(ex.nom) || item.duree || ex.duree_defaut || 30;
-        const pause  = item.pause  !== undefined ? item.pause : 20;
-        for (let s = 1; s <= series; s++) {
-          const label = series > 1 ? (s === 1 ? ex.nom : ex.nom + ', série ' + s) : ex.nom;
-          const speakTxt = s === 1 ? (ex.description_vocale || ex.nom + '.') : (ex.nom + ', série ' + s + '.');
-          const detail = s === 1 ? (ex.description_courte || '') : (s === 2 ? '2e série' : s + 'e série');
-          timer.push({name: label, speak: speakTxt, detail: detail, duration: duree, phase: ex.categorie || 'Renforcement', exId: ex.id});
-          if (pause > 0) timer.push(_R(pause));
-        }
-        logItems.push({n: ex.nom, s: series, d: duree + 's'});
-      });
-
-      // Le cooldown est géré dans exercices_json du Sheet (spécifique aux muscles travaillés)
-
-      return {
-        label:  jour.label,
-        type:   jour.type,
-        color:  jour.couleur,
-        timer:  timer,
-        log:    logItems
-      };
-    });
-
-  // Remplacer null (vendredi + dimanche) par le yoga en dur de DAY_CONFIG
-  const result = weekly.map((w, i) => w === null ? DAY_CONFIG[i] : w);
-  return result.length === 7 ? result : null;
-}
-
 // Retrouve un exercice dans la banque par son nom (insensible à la casse, matching partiel)
 function findExercice(nom) {
   if (!nom || !S.exercices.length) return null;
   const n = nom.toLowerCase().trim();
   return S.exercices.find(e => e.nom.toLowerCase().includes(n) || n.includes(e.nom.toLowerCase())) || null;
-}
-
-// Enrichit un tableau timer avec les description_vocale de la banque.
-// Fait une copie shallow — ne mute pas les tableaux PHYSIO_BASE, RENFO_BASE, etc.
-// Règle : on remplace speak seulement si la banque a une description_vocale non vide
-//         ET que le speak codé en dur est générique (= juste nom + point) ou absent.
-function enrichTimerFromBanque(timer) {
-  if (!timer) return timer;
-  return timer.map(ex => {
-    if (ex.isRest || !ex.name) return ex; // pauses : on touche pas
-    // Corriger la durée si getDureeDefaut a une valeur pour cet exercice
-    // Exception : les blocs narrés (forceFichier) gardent leur durée calée sur le MP3
-    if (!ex.forceFichier) {
-      const dureeCorrigee = getDureeDefaut(ex.name);
-      if (dureeCorrigee && dureeCorrigee !== 30) {
-        ex = Object.assign({}, ex, { duration: dureeCorrigee });
-      }
-    }
-    if (!S.exercices.length) return ex;
-    const banque = findExercice(ex.name);
-    if (!banque || !banque.description_vocale) return ex;
-    // speak générique = nom + '.' ou vide — on le remplace
-    const isGeneric = !ex.speak || ex.speak.trim() === (ex.name + '.');
-    if (isGeneric) {
-      return Object.assign({}, ex, { speak: banque.description_vocale });
-    }
-    // speak déjà personnalisé — on garde, mais on ajoute la description comme detail si absent
-    if (!ex.detail && banque.description_courte) {
-      return Object.assign({}, ex, { detail: banque.description_courte });
-    }
-    return ex;
-  });
 }
 
 function setSyncState(s, txt) {
@@ -1998,10 +1859,6 @@ function effectiveWeekly() {
     log:   cfg.log   || []
   }));
   const aDesBlocs = base.some(d => (d.timer && d.timer.length) || (d.timerMatin && d.timerMatin.length));
-  if (aDesBlocs) return base;
-  // Sheet en dernier recours seulement
-  const fromSheet = buildWeeklyFromSheet();
-  if (fromSheet) return fromSheet;
   return base;
 }
 
@@ -2019,13 +1876,17 @@ function jsToDayIdx(jsDay) { return jsDay === 0 ? 6 : jsDay - 1; }
 const SPECIAL_PROGRAMS = {};
 
 function getWcProgram(type) {
-  // Programmes spéciaux (coiffe, marche)
   if (SPECIAL_PROGRAMS[type]) return SPECIAL_PROGRAMS[type];
-  // Programmes WEEKLY
-  const W = effectiveWeekly();
-  const day = W.find(d => d.type === type);
-  if (day) return day.timer;
-  return W[0].timer; // fallback Lundi
+  // Un engagement planifié joue la même chose que la séance du jour :
+  // on retrouve le jour par son libellé dans TYPES_SEANCE, puis on lit
+  // la table SEANCES. Avant, ce chemin servait les anciens tableaux de
+  // DAY_CONFIG, donc un engagement rejouait le programme d'avant la refonte.
+  let idx = TYPES_SEANCE.indexOf(type);
+  if (idx === -1) {
+    idx = TYPES_SEANCE.findIndex(t => t && type && t.toLowerCase() === String(type).toLowerCase());
+  }
+  if (idx === -1) idx = (S.seanceDayIdx !== null && S.seanceDayIdx !== undefined) ? S.seanceDayIdx : 0;
+  return seanceDuJour(idx, 'soir');
 }
 
 
@@ -3121,10 +2982,6 @@ function seanceDuJour(idx, moment) {
   return table.map(blocVersExercice);
 }
 
-function dureeSeance(idx, moment) {
-  return (SEANCES[idx + '-' + moment] || []).reduce(
-    (t, b) => t + (b.pause !== undefined ? b.pause : b.duree), 0);
-}
 
 
 // Affiche le sélecteur Matin/Soir sur les jours qui ont deux séances,
@@ -4579,107 +4436,6 @@ const COOLDOWN_WC = [
   _E("Shavasana","Shavasana. Allonge-toi sur le dos, bras légèrement écartés, paumes vers le haut. Ferme les yeux. Relâche les pieds, les jambes, les hanches, le ventre, les épaules, la nuque. Respiration naturelle. Bravo pour cette séance.","Allongé — paumes vers le haut, relâche complet",90,"Cooldown"),
 ];
 
-function logToTimer(log) {
-  if (!log || !log.length) return [];
-  // Un seul compteur pour tout le warmup — le MP3 narre, la transition se fait à la fin du MP3
-  const result = [{
-    name: 'Échauffement',
-    speak: '',
-    detail: 'Narration vocale en cours...',
-    duration: 600, // 10 min max — le MP3 déclenche la transition réelle
-    phase: 'Échauffement',
-    isRest: false,
-    isSingleWarmup: true
-  }];
-  // Association exercice → MP3 individuel
-  const EXERCICE_AUDIOS = {
-    'horizontal pull': 'tirage-horizontal.mp3',
-    'knee tuck':       'knee-tucks.mp3',
-    'push up':         'push-ups.mp3',
-    'full squat':      'full-squat.mp3',
-    'élévation':       'elevations-wc.mp3',
-    'étirement':       'vendredi-souplesse.mp3',
-    'souplesse':       'vendredi-souplesse.mp3',
-    'yoga iyengar':    'dimanche-yoga.mp3',
-    'yoga — iyengar':  'dimanche-yoga.mp3',
-    'iyengar':         'dimanche-yoga.mp3',
-    'physio wct':      'physio-wct-matin.mp3',
-    'physio west coast': 'physio-wct-matin.mp3',
-    'punching strength': 'jeudi-push-pull.mp3',
-    'push pull':       'jeudi-push-pull.mp3',
-    'kicking strength': 'jeudi-fentes.mp3',
-    'fentes stationnaires': 'jeudi-fentes.mp3',
-    'pont fessier unilatéral': 'jeudi-pont.mp3',
-    'gainage latéral jeudi': 'jeudi-gainage.mp3'
-  };
-
-  const injectedAudios = new Set();
-
-  log.forEach(function(ex) {
-    const nomLower = (ex.n || '').toLowerCase();
-
-    // Physio WCT — bloc guidé par MP3 Aoede
-    if (nomLower.includes('physio wct') || nomLower.includes('physio west coast')) {
-      result.push({
-        name: ex.n,
-        speak: '',
-        detail: 'Abduction hanche + Flexion hanche — narration Aoede',
-        duration: 480,
-        phase: 'Physio WCT',
-        isRest: false,
-        isForce: true,
-        forceFichier: 'physio-wct-matin.mp3'
-      });
-      result.push(_R(5));
-      return;
-    }
-
-    // Kicks — bloc unique guidé par le MP3
-    if (nomLower.includes('kick')) {
-      result.push({
-        name: ex.n,
-        speak: '',
-        detail: 'Narration vocale en cours...',
-        duration: 300,
-        phase: 'Wing Chun',
-        isRest: false,
-        isKicks: true
-      });
-      result.push(_R(5));
-      return;
-    }
-
-    // Exercice avec MP3 dédié
-    const audioEntry = Object.entries(EXERCICE_AUDIOS).find(function(e) {
-      return nomLower.includes(e[0]);
-    });
-    if (audioEntry) {
-      const fichier = audioEntry[1];
-      if (!injectedAudios.has(fichier)) {
-        injectedAudios.add(fichier);
-        result.push({
-          name: ex.n,
-          speak: '', detail: 'Narration vocale en cours...',
-          duration: 600, phase: 'Wing Chun',
-          isRest: false, isForce: true,
-          forceFichier: fichier
-        });
-        result.push(_R(5));
-      }
-      return;
-    }
-
-    const secs = parseDurToSecs(ex.d);
-    const sets = Math.max(1, parseInt(ex.s) || 1);
-    for (let s = 1; s <= sets; s++) {
-      const label = sets > 1 ? ex.n + ' — série ' + s : ex.n;
-      result.push(_E(label, label + '.', String(ex.d || ''), secs, 'Wing Chun'));
-      if (s < sets) result.push(_R(20));
-    }
-    result.push(_R(20));
-  });
-  return result;
-}
 
 async function acceptPlan() {
   if (!S.coachPlan) return;
@@ -4728,34 +4484,6 @@ async function _acceptPlanInner(btn) {
       try { await api({action:'savePlan', plan: JSON.stringify(plan)}); } catch(e) {}
       created++;
     }
-  }
-
-  // Un patch venant du Coach peut donner la durée en texte ("12:42", "45s",
-  // "30min") au lieu d'un nombre de secondes. Sans normalisation, ex.duration
-  // est undefined et le timer affiche NaN:NaN puis se bloque en pause.
-  function dureeVersSecondes(v) {
-    if (typeof v === 'number' && isFinite(v)) return Math.round(v);
-    if (typeof v !== 'string') return null;
-    const t = v.trim().toLowerCase();
-    let m = t.match(/^(\d+):(\d{1,2})$/);              // 12:42
-    if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
-    m = t.match(/^(\d+)\s*m(in)?$/);                    // 30min
-    if (m) return parseInt(m[1]) * 60;
-    m = t.match(/^(\d+)\s*s(ec)?$/);                    // 45s
-    if (m) return parseInt(m[1]);
-    m = t.match(/^(\d+)$/);                             // 45
-    if (m) return parseInt(m[1]);
-    return null;
-  }
-
-  function normTimerEntry(ex) {
-    const e = Object.assign({}, ex);
-    if (!isFinite(e.duration)) {
-      const s = dureeVersSecondes(e.duration) ?? dureeVersSecondes(e.d) ?? null;
-      e.duration = s !== null ? s : 30;   // repli sûr plutôt que NaN
-    }
-    if (!e.name && e.n) e.name = e.n;
-    return e;
   }
 
   // ─── Appliquer les ajustements WEEKLY
