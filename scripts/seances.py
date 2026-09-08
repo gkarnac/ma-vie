@@ -371,6 +371,50 @@ def gen_gainage():
     return tts(GAINAGE_SSML, os.path.join(OUT, "jeudi-gainage.mp3"), 0.95, ssml=True)
 
 
+
+# ══════════════════════════════════════════════════════════════════════
+#  CIRCUIT CERVICAL — mercredi soir
+#  Chin tuck 3 x 45 s, entrelacé avec la mobilité thoracique qui, elle,
+#  ne se fait qu'UNE fois chacune (prescription physio : rotation 60 s,
+#  extension 45 s, 1 série). L'entrelacement laisse le cou récupérer
+#  entre les séries sans gonfler le volume de mobilité.
+#  Bloc de récupération : ton calme, pas d'encouragements.
+# ══════════════════════════════════════════════════════════════════════
+
+CV = {
+    "intro":   "Circuit cervical. Chin tuck et mobilité thoracique. "
+               "Assis bien droit sur une chaise.",
+    "tempo":   "Pour le chin tuck : ramène le menton vers l'arrière, "
+               "maintiens trois secondes, relâche. Sans forcer.",
+    "chin":    "Chin tuck. Quarante-cinq secondes.",
+    "rot":     "Mobilité thoracique en rotation. Mains derrière la tête, "
+               "pivote lentement à gauche puis à droite, amplitude maximale, "
+               "bassin fixe. Soixante secondes.",
+    "ext":     "Extension thoracique. Mains derrière la tête, ouvre la poitrine "
+               "vers le haut. Quarante-cinq secondes.",
+    "trans":   "Transition.",
+    "fin":     "Circuit terminé.",
+}
+
+CV_CHIN = 45     # s, 3 séries — prescription physio 2, portée à 3 pour l'endurance
+CV_ROT  = 60     # s, 1 série
+CV_EXT  = 45     # s, 1 série
+
+
+def gen_cervical():
+    v = {k: voix(f"cv_{k}", t) for k, t in CV.items()}
+    t5 = [v["trans"], bip(5)]
+    parts = ([v["intro"], v["tempo"]]
+             + [v["chin"], bip(CV_CHIN)] + t5
+             + [v["rot"],  bip(CV_ROT)]  + t5
+             + [v["chin"], bip(CV_CHIN)] + t5
+             + [v["ext"],  bip(CV_EXT)]  + t5
+             + [v["chin"], bip(CV_CHIN)]
+             + [v["fin"]])
+    brut = cat(parts, os.path.join(TMP, "cervical-circuit.wav"))
+    return encoder(brut, os.path.join(OUT, "cervical-circuit.mp3"))
+
+
 # ── pilote ──────────────────────────────────────────────────────────────
 
 SEANCES = {
@@ -379,6 +423,7 @@ SEANCES = {
     "core":      gen_core,
     "pont":      gen_pont,
     "gainage":   gen_gainage,
+    "cervical":  gen_cervical,
 }
 
 FICHIERS = {
@@ -387,6 +432,7 @@ FICHIERS = {
     "core":      "core-circuit.mp3",
     "pont":      "jeudi-pont.mp3",
     "gainage":   "jeudi-gainage.mp3",
+    "cervical":  "cervical-circuit.mp3",
 }
 
 
