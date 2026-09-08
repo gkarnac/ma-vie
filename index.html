@@ -3126,6 +3126,25 @@ function dureeSeance(idx, moment) {
 }
 
 
+// Affiche le sélecteur Matin/Soir sur les jours qui ont deux séances,
+// et met en surbrillance le moment actif.
+function applyMomentButtons(idx, moment) {
+  const wrap = document.getElementById('split-matin-soir');
+  if (!wrap) return;
+  const split = JOURS_AVEC_SPLIT.includes(idx);
+  wrap.style.display = split ? 'flex' : 'none';
+  if (!split) return;
+  const actif = { border:'1px solid var(--accent)', background:'var(--accent)',
+                  color:'#000', fontWeight:'600' };
+  const repos = { border:'1px solid var(--border)', background:'transparent',
+                  color:'var(--txt2)', fontWeight:'400' };
+  [['btn-moment-matin','matin'], ['btn-moment-soir','soir']].forEach(([id, m]) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    Object.assign(b.style, m === moment ? actif : repos);
+  });
+}
+
 function selectSeanceDay(idx, moment) {
   if (S.seanceRunning) stbToggle();
   S.seanceDayIdx = idx;
@@ -3152,6 +3171,7 @@ function selectSeanceDay(idx, moment) {
   S.seanceSpoken = false;
   clearInterval(S.seanceInterval);
   applyDayButtons(idx);
+  applyMomentButtons(idx, moment);
 
   const cfg = DAY_CONFIG[idx] || {};
   const lbl = document.getElementById('seance-type-label');
