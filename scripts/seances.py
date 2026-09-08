@@ -28,7 +28,11 @@ import subprocess
 import sys
 import urllib.request
 
-API_KEY = os.environ.get("GOOGLE_TTS_KEY", "AIzaSyDYRXMbiukgYiYMyUZ1E9srwfLPZW9gGOQ")
+API_KEY = os.environ.get("GOOGLE_TTS_KEY")
+if not API_KEY:
+    sys.exit("GOOGLE_TTS_KEY absente.\n"
+             "  export GOOGLE_TTS_KEY='...'  puis relancer.\n"
+             "  Ne jamais écrire la clé dans ce fichier : le dépôt est public.")
 VOICE   = "fr-CA-Chirp3-HD-Aoede"
 RATE    = "24000"      # Hz
 BITRATE = "32k"
