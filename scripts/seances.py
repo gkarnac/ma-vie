@@ -415,6 +415,62 @@ def gen_cervical():
     return encoder(brut, os.path.join(OUT, "cervical-circuit.mp3"))
 
 
+
+# ══════════════════════════════════════════════════════════════════════
+#  COIFFE — rotations et élévations (lundi et jeudi soir)
+#  Six blocs à l'élastique, tirés de la banque d'exercices :
+#    rotation externe G/D 45 s, rotation interne G/D 45 s,
+#    élévation latérale G/D 40 s.  Une seule série chacun, 4x/semaine.
+#  Transitions de 15 s, comme dans la table : l'épaule a besoin de
+#  récupérer entre les positions.
+#  La consigne « doux sur l'épaule droite » vient de la physio et doit
+#  être conservée telle quelle à chaque passage à droite.
+# ══════════════════════════════════════════════════════════════════════
+
+CF = {
+    "intro":  "Coiffe des rotateurs, à l'élastique. Suis la voix pour le rythme.",
+    "ext_g":  "Rotation externe, bras gauche. Coude collé au corps.",
+    "ext_d":  "Rotation externe, bras droit. Doux sur l'épaule droite.",
+    "int_g":  "Rotation interne, bras gauche.",
+    "int_d":  "Rotation interne, bras droit. Surveille la douleur.",
+    "elev_g": "Élévation latérale gauche. Pouce vers le bas, vider la canette.",
+    "elev_d": "Élévation latérale droite. Doux sur l'épaule droite.",
+    "fin":    "Rotations et élévations terminées.",
+}
+
+CF_TIRE  = 3.0   # s — phase concentrique
+CF_RELAX = 5.0   # s — phase excentrique, la plus importante pour la coiffe
+CF_ROT   = 6     # reps de 8 s → 48 s
+CF_ELEV  = 5     # reps de 8 s → 40 s
+CF_ANN   = 10.0  # s — l'annonce du bloc suivant sert aussi de repos
+
+
+def gen_coiffe():
+    v = {k: voix(f"cf_{k}", t) for k, t in CF.items()}
+    # Les verbes rythment chaque rep : la parole EST le métronome.
+    def phase(cle, texte, secs):
+        brut = voix(f"cf_v_{cle}", texte, rate=0.9)
+        return pad(brut, secs, os.path.join(TMP, f"cf_ph_{cle}.wav"))
+
+    tire   = phase("tire",   "Tire…",       CF_TIRE)
+    relax  = phase("relax",  "Relâche…",       CF_RELAX)
+    monte  = phase("monte",  "Monte…",      CF_TIRE)
+    desc   = phase("desc",   "Redescends…",    CF_RELAX)
+
+    def bloc(cle, reps, a, b):
+        ann = pad(v[cle], CF_ANN, os.path.join(TMP, f"cf_a_{cle}.wav"))
+        return [ann] + [a, b] * reps
+
+    parts = [v["intro"]]
+    for cle in ("ext_g", "ext_d", "int_g", "int_d"):
+        parts += bloc(cle, CF_ROT, tire, relax)
+    for cle in ("elev_g", "elev_d"):
+        parts += bloc(cle, CF_ELEV, monte, desc)
+    parts += [v["fin"]]
+    brut = cat(parts, os.path.join(TMP, "coiffe-rotations.wav"))
+    return encoder(brut, os.path.join(OUT, "coiffe-rotations.mp3"))
+
+
 # ── pilote ──────────────────────────────────────────────────────────────
 
 SEANCES = {
@@ -424,6 +480,7 @@ SEANCES = {
     "pont":      gen_pont,
     "gainage":   gen_gainage,
     "cervical":  gen_cervical,
+    "coiffe":    gen_coiffe,
 }
 
 FICHIERS = {
@@ -433,6 +490,7 @@ FICHIERS = {
     "pont":      "jeudi-pont.mp3",
     "gainage":   "jeudi-gainage.mp3",
     "cervical":  "cervical-circuit.mp3",
+    "coiffe":    "coiffe-rotations.mp3",
 }
 
 
