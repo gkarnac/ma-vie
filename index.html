@@ -530,6 +530,15 @@ textarea{resize:vertical;min-height:68px}
   <p class="slabel">Log des exercices</p>
   <div class="card" id="ex-log-card"></div>
 
+  <!-- Effort ressenti pour la séance (RPE). L'élément avait disparu lors d'une
+       restauration : buildRpeGrid() tournait dans le vide et l'intensité
+       n'était jamais enregistrée. -->
+  <p class="slabel">Effort ressenti (RPE)</p>
+  <div class="card" style="padding:12px">
+    <div class="rpe-grid" id="rpe-grid"></div>
+    <div style="font-size:11px;color:var(--txt2)">1 très facile · 5 modéré · 8 difficile · 10 maximal</div>
+  </div>
+
   <button class="btn" style="margin-top:8px;margin-bottom:26px" onclick="saveSeanceComplete()">Terminer et sauvegarder ✓</button>
 
   <!-- ── FORMES WING CHUN (section secondaire) ── -->
@@ -2142,10 +2151,18 @@ function openPostTimerModal(plan) {
   // Détecter les exercices avec progression dans la séance
   const exEvalSection = document.getElementById('pt-exeval-section');
   const exEvalList = document.getElementById('pt-exeval-list');
-  const exercicesFaits = (S.seanceExercises || []).filter(e => e.exId && EX_AVEC_PROGRESSION.has(e.exId));
-  // Dédupliquer par exId
+  // Un bloc narré couvre parfois plusieurs exercices : la table porte une
+  // liste [[id, libellé], ...]. On la déplie ici, puis on déduplique.
   const vus = new Set();
-  const uniques = exercicesFaits.filter(e => { if (vus.has(e.exId)) return false; vus.add(e.exId); return true; });
+  const uniques = [];
+  (S.seanceExercises || []).forEach(e => {
+    const liste = e.ex || (e.exId ? [[e.exId, e.name]] : []);
+    liste.forEach(([id, libelle]) => {
+      if (!EX_AVEC_PROGRESSION.has(id) || vus.has(id)) return;
+      vus.add(id);
+      uniques.push({ exId: id, name: libelle || e.name });
+    });
+  });
 
   if (uniques.length) {
     exEvalSection.classList.remove('hidden');
@@ -2559,7 +2576,7 @@ async function savePostTimer() {
     locations: locs, medications: [],
     exercises: hab ? [hab.nom] : (plan ? [plan.habitude_nom] : []),
     duration: plan ? (plan.duree_reelle || plan.duree_prevue) : null,
-    intensity: null, events: [],
+    intensity: S.seanceRpe || null, events: [],
     notes: note || ('Post-session ' + (plan ? plan.habitude_nom : '')),
     ex_eval: Object.keys(S.postTimerExEval || {}).length ? JSON.stringify(S.postTimerExEval) : null,
     source: 'post-timer'
@@ -2823,9 +2840,11 @@ const SEANCES = {
     { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
   ],
   '0-soir': [
-    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763 },
+    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763,
+      ex:[['ex-014','Pompes inclinées'],['ex-018','Tirage incliné']] },
     { pause:30 },
-    { mp3:'jeudi-fentes.mp3',    nom:'Fentes stationnaires G+D',  duree:572 },
+    { mp3:'jeudi-fentes.mp3',    nom:'Fentes stationnaires G+D',  duree:572,
+      ex:[['ex-020','Fentes stationnaires']] },
     { pause:30 },
     ...COIFFE,
     { pause:30 },
@@ -2845,7 +2864,8 @@ const SEANCES = {
     { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
   ],
   '1-soir': [
-    { mp3:'core-circuit.mp3', nom:'Circuit gainage', duree:526 },
+    { mp3:'core-circuit.mp3', nom:'Circuit gainage', duree:526,
+      ex:[['ex-022','Hollow body hold'],['ex-023','Levées de jambes'],['ex-050','Dead bug']] },
     { pause:30 },
     { timer:'Pendule de Codman — gauche', duree:60 },
     { pause:15 },
@@ -2889,11 +2909,14 @@ const SEANCES = {
     { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
   ],
   '3-soir': [
-    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763 },
+    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763,
+      ex:[['ex-014','Pompes inclinées'],['ex-018','Tirage incliné']] },
     { pause:30 },
-    { mp3:'jeudi-pont.mp3',      nom:'Pont fessier unilatéral',   duree:185 },
+    { mp3:'jeudi-pont.mp3',      nom:'Pont fessier unilatéral',   duree:185,
+      ex:[['ex-049','Pont fessier']] },
     { pause:20 },
-    { mp3:'jeudi-gainage.mp3',   nom:'Gainage latéral G+D',       duree:153 },
+    { mp3:'jeudi-gainage.mp3',   nom:'Gainage latéral G+D',       duree:153,
+      ex:[['ex-052','Gainage latéral']] },
     { pause:30 },
     ...COIFFE,
     { pause:30 },
@@ -2960,7 +2983,8 @@ function blocVersExercice(b) {
   }
   if (b.mp3) {
     return { name:b.nom, speak:'', detail:b.detail || '', duration:b.duree,
-             isRest:false, isForce:true, forceFichier:b.mp3, phase:'Guidé' };
+             isRest:false, isForce:true, forceFichier:b.mp3, phase:'Guidé',
+             ex:b.ex || null };
   }
   return { name:b.timer, speak:'', detail:b.detail || '', duration:b.duree,
            isRest:false, phase:'Exercice' };
@@ -3010,6 +3034,7 @@ function selectSeanceDay(idx, moment) {
 
   // Une seule source : la table SEANCES.
   S.seanceExercises = seanceDuJour(idx, moment);
+  S.seanceRpe = null;
   S.seanceIdx = 0;
   S.seanceVal = S.seanceExercises.length ? S.seanceExercises[0].duration : 0;
 
