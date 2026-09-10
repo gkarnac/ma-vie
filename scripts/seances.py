@@ -471,6 +471,47 @@ def gen_coiffe():
     return encoder(brut, os.path.join(OUT, "coiffe-rotations.mp3"))
 
 
+
+# ══════════════════════════════════════════════════════════════════════
+#  TRAPÈZES — Y puis T (lundi et jeudi soir)
+#  Banque : 40 s, 1 série chacun, 4x/semaine, allongé sur le ventre,
+#  pouces vers le haut. En RÉPÉTITIONS, comme le physio l'a montré :
+#  5 reps de 8 s (3 s lever, 5 s redescendre), même tempo que les
+#  rotations. Si les épaules remontent vers les oreilles, la forme est
+#  perdue — mieux vaut redescendre que finir la série.
+# ══════════════════════════════════════════════════════════════════════
+
+TZ = {
+    "y":     "Trapèzes en Y. Allongé sur le ventre, bras en Y, pouces vers le haut. "
+             "Épaules loin des oreilles.",
+    "t":     "Trapèzes en T. Même position, bras en croix.",
+    "repos": "Repose les bras.",
+    "fin":   "Trapèzes terminés.",
+}
+
+TZ_LEVE  = 3.0    # s — montée, même tempo que les rotations
+TZ_DESC  = 5.0    # s — descente contrôlée
+TZ_REPS  = 5      # reps de 8 s → 40 s, la durée prescrite
+TZ_ANN   = 10.0   # s — annonce qui sert aussi de repos
+
+
+def gen_trapezes():
+    v = {k: voix(f"tz_{k}", t, 0.9) for k, t in TZ.items()}
+    leve = pad(voix("tz_v_leve", "Lève…", 0.9), TZ_LEVE,
+               os.path.join(TMP, "tz_ph_leve.wav"))
+    desc = pad(voix("tz_v_desc", "Redescends…", 0.9), TZ_DESC,
+               os.path.join(TMP, "tz_ph_desc.wav"))
+
+    def bloc(cle):
+        ann = pad(v[cle], TZ_ANN, os.path.join(TMP, f"tz_a_{cle}.wav"))
+        return [ann] + [leve, desc] * TZ_REPS
+
+    parts = bloc("y") + [pad(v["repos"], 12.0, os.path.join(TMP, "tz_r.wav"))]
+    parts += bloc("t") + [v["fin"]]
+    brut = cat(parts, os.path.join(TMP, "trapezes.wav"))
+    return encoder(brut, os.path.join(OUT, "trapezes.mp3"))
+
+
 # ── pilote ──────────────────────────────────────────────────────────────
 
 SEANCES = {
@@ -481,6 +522,7 @@ SEANCES = {
     "gainage":   gen_gainage,
     "cervical":  gen_cervical,
     "coiffe":    gen_coiffe,
+    "trapezes":  gen_trapezes,
 }
 
 FICHIERS = {
@@ -491,6 +533,7 @@ FICHIERS = {
     "gainage":   "jeudi-gainage.mp3",
     "cervical":  "cervical-circuit.mp3",
     "coiffe":    "coiffe-rotations.mp3",
+    "trapezes":  "trapezes.mp3",
 }
 
 
