@@ -2802,12 +2802,10 @@ function applyDayButtons(idx) {
 // ═══════════════════════════════════════════════════════════════════
 
 const COIFFE = [
-  { timer:'Rotation externe — gauche',   duree:45 }, { pause:15 },
-  { timer:'Rotation externe — droite',   duree:45 }, { pause:15 },
-  { timer:'Rotation interne — gauche',   duree:45 }, { pause:15 },
-  { timer:'Rotation interne — droite',   duree:45 }, { pause:15 },
-  { timer:'Élévation latérale — gauche', duree:40 }, { pause:15 },
-  { timer:'Élévation latérale — droite', duree:40 }, { pause:15 },
+  // Rotations et élévations : un seul bloc narré, tempo 8 s par rep
+  // (3 s tirage, 5 s relâchement). Remplace six minuteurs muets.
+  { mp3:'coiffe-rotations.mp3', nom:'Coiffe — rotations et élévations', duree:339 },
+  { pause:15 },
   { timer:'Trapèzes en Y',               duree:40 }, { pause:15 },
   { timer:'Trapèzes en T',               duree:40 },
 ];
