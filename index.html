@@ -3137,6 +3137,7 @@ function stbTickOnce() {
 // les secondes manquées si l'intervalle a été ralenti par le navigateur
 function stbTick() {
   if (!S.seanceRunning) return;
+  try { majSeek(); } catch(e) {}
   const now = Date.now();
   const missed = Math.floor((now - S.seanceTickBase) / 1000);
   S.seanceTickBase += missed * 1000; // avance la base du nombre de secondes réelles
@@ -3208,11 +3209,12 @@ function majSeek() {
   const pos  = document.getElementById('stb-seek-pos');
   if (!zone) return;
   const ex = S.seanceExercises[S.seanceIdx];
-  const guide = !!(ex && ex.forceFichier && forceAudio && forceAudio._src === ex.forceFichier);
+  const guide = !!(ex && ex.forceFichier);
   zone.style.display = guide ? 'flex' : 'none';
   if (guide && pos) {
-    const t = Math.floor(forceAudio.currentTime || 0);
-    const d = Math.floor(forceAudio.duration || ex.duration || 0);
+    const pret = forceAudio && forceAudio._src === ex.forceFichier;
+    const t = pret ? Math.floor(forceAudio.currentTime || 0) : 0;
+    const d = Math.floor((pret && forceAudio.duration) || ex.duration || 0);
     const f = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
     pos.textContent = f(t) + ' / ' + f(d);
   }
