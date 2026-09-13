@@ -1101,9 +1101,35 @@ function getForceAudio(filename) {
   return forceAudio;
 }
 
+// Mettre en pause une séance ne doit pas perdre la progression du MP3.
+// Avant, l'audio continuait de jouer pendant la pause, puis repartait de zéro
+// à la reprise — une séance de yoga de 25 minutes était à refaire.
+function pauseTousAudios() {
+  ['forceAudio', 'warmupAudio', 'kicksAudio'].forEach(nom => {
+    const a = (nom === 'forceAudio') ? forceAudio
+            : (nom === 'warmupAudio') ? warmupAudio : kicksAudio;
+    if (a && !a.paused) { a.pause(); S.audioReprise = S.audioReprise || {}; S.audioReprise[nom] = true; }
+  });
+}
+
+function reprendreAudios() {
+  if (!S.audioReprise) return false;
+  let repris = false;
+  [['forceAudio', forceAudio], ['warmupAudio', warmupAudio], ['kicksAudio', kicksAudio]]
+    .forEach(([nom, a]) => {
+      if (S.audioReprise[nom] && a && a.currentTime > 0) {
+        a.play().catch(e => {});
+        repris = true;
+      }
+    });
+  S.audioReprise = null;
+  return repris;
+}
+
 function startForceAudio(filename) {
   const audio = getForceAudio(filename);
   audio.currentTime = 0;
+  S.forceAudioFile = filename;
   S.forceAudioPlaying = true;
   audio.onended = () => {
     S.forceAudioPlaying = false;
@@ -3034,6 +3060,7 @@ function selectSeanceDay(idx, moment) {
 
   // Une seule source : la table SEANCES.
   S.seanceExercises = seanceDuJour(idx, moment);
+  S.audioReprise = null;
   S.seanceRpe = null;
   S.seanceIdx = 0;
   S.seanceVal = S.seanceExercises.length ? S.seanceExercises[0].duration : 0;
@@ -3126,11 +3153,15 @@ function stbToggle() {
   if (S.seanceRunning) {
     requestWakeLock();
     noSleepStart(); // fallback iOS
-    S.seanceSpoken = false;
     S.seanceTickBase = Date.now(); // horodatage de référence
-    // Lancer le MP3 si on est au début du warmup
-    const curEx = S.seanceExercises[S.seanceIdx];
-    if (curEx && curEx.phase === 'Échauffement') startWarmupAudio();
+    // Si un MP3 était en cours avant la pause, on le reprend où il était
+    // au lieu de le relancer depuis le début.
+    const repris = reprendreAudios();
+    if (!repris) {
+      S.seanceSpoken = false;
+      const curEx = S.seanceExercises[S.seanceIdx];
+      if (curEx && curEx.phase === 'Échauffement') startWarmupAudio();
+    }
     S.seanceInterval = setInterval(stbTick, 500); // polling 2×/sec pour réactivité
   } else {
     clearInterval(S.seanceInterval);
@@ -3138,8 +3169,7 @@ function stbToggle() {
     releaseWakeLock();
     noSleepStop();
     window.speechSynthesis.cancel();
-    stopWarmupAudio();
-    stopKicksAudio();
+    pauseTousAudios();
   }
 }
 
