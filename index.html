@@ -524,6 +524,13 @@ textarea{resize:vertical;min-height:68px}
       <button class="stb-btn stb-btn-p" id="stb-play" onclick="stbToggle()">▶ GO</button>
       <button class="stb-btn stb-btn-s" onclick="stbSkip()">▶</button>
     </div>
+    <!-- Déplacement à l'intérieur d'un bloc guidé. Affiché seulement quand un
+         MP3 est en cours : sauter le bloc entier était la seule option. -->
+    <div id="stb-seek" style="display:none;gap:8px;justify-content:center;margin-top:8px">
+      <button class="stb-btn stb-btn-s" onclick="stbSeek(-30)" style="font-size:12px">↺ 30s</button>
+      <span id="stb-seek-pos" style="font-size:12px;color:var(--txt2);align-self:center;min-width:96px;text-align:center"></span>
+      <button class="stb-btn stb-btn-s" onclick="stbSeek(30)" style="font-size:12px">30s ↻</button>
+    </div>
   </div>
 
   <!-- Log exercices -->
@@ -3181,6 +3188,36 @@ function stbSkip() {
   stbNext();
 }
 
+// Déplace la lecture à l'intérieur du MP3 en cours et garde le compte à
+// rebours synchronisé avec la position réelle de l'audio.
+function stbSeek(secondes) {
+  const ex = S.seanceExercises[S.seanceIdx];
+  if (!ex || !ex.forceFichier || !forceAudio) return;
+  const total = forceAudio.duration || ex.duration || 0;
+  const cible = Math.max(0, Math.min(total - 1, (forceAudio.currentTime || 0) + secondes));
+  forceAudio.currentTime = cible;
+  S.seanceVal = Math.max(0, Math.round(total - cible));
+  S.seanceTickBase = Date.now();
+  stbRender();
+  majSeek();
+}
+
+// Affiche la position, et ne montre les boutons que pour un bloc guidé.
+function majSeek() {
+  const zone = document.getElementById('stb-seek');
+  const pos  = document.getElementById('stb-seek-pos');
+  if (!zone) return;
+  const ex = S.seanceExercises[S.seanceIdx];
+  const guide = !!(ex && ex.forceFichier && forceAudio && forceAudio._src === ex.forceFichier);
+  zone.style.display = guide ? 'flex' : 'none';
+  if (guide && pos) {
+    const t = Math.floor(forceAudio.currentTime || 0);
+    const d = Math.floor(forceAudio.duration || ex.duration || 0);
+    const f = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    pos.textContent = f(t) + ' / ' + f(d);
+  }
+}
+
 function stbPrev() {
   clearInterval(S.seanceInterval);
   S.seanceRunning = false;
@@ -3236,6 +3273,7 @@ function stbNext() {
 }
 
 function stbRender() {
+  try { majSeek(); } catch(e) {}
   const ex = S.seanceExercises[S.seanceIdx];
   if (!ex) return;
   const m = Math.floor(S.seanceVal / 60), s = S.seanceVal % 60;
