@@ -50,7 +50,14 @@ DEPLOYE = {
 }
 
 NUMS = ["Un", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit",
-        "Neuf", "Dix", "Onze", "Douze", "Treize", "Quatorze", "Quinze"]
+        "Neuf", "Dix", "Onze", "Douze", "Treize", "Quatorze", "Quinze",
+        "Seize", "Dix-sept", "Dix-huit", "Dix-neuf", "Vingt",
+        "Vingt-et-un", "Vingt-deux", "Vingt-trois", "Vingt-quatre", "Vingt-cinq",
+        "Vingt-six", "Vingt-sept", "Vingt-huit", "Vingt-neuf", "Trente",
+        "Trente-et-un", "Trente-deux", "Trente-trois", "Trente-quatre", "Trente-cinq",
+        "Trente-six", "Trente-sept", "Trente-huit", "Trente-neuf", "Quarante"]
+# Le livre prescrit jusqu'à 40 reps pour les fentes : la liste doit suivre,
+# sinon la génération tombe en IndexError au-delà de quinze.
 
 
 # ── primitives ──────────────────────────────────────────────────────────
@@ -223,9 +230,8 @@ def gen_push_pull():
 FE = {
     "intro":  "Fentes stationnaires. Kicking Strength. Trois rounds. "
               "Alternance gauche droite.",
-    "desc":   "Descends en deux secondes. Maintiens une seconde. "
-              "Remonte en deux secondes.",
-    "r1":     "Round un. Jambe gauche devant. Quinze répétitions. Pars.",
+    "desc":   "Rythme soutenu. Descends, remonte, sans arrêt en bas.",
+    "r1":     "Round un. Jambe gauche devant. Vingt répétitions. Pars.",
     "r2":     "Round deux. Jambe gauche. Pars.",
     "r3":     "Round trois. Dernier round. Jambe gauche. Pars.",
     "droite": "Jambe droite. Pars.",
@@ -234,8 +240,8 @@ FE = {
     "fin":    "Terminé. Beau travail.",
 }
 
-FE_REPS  = 15
-FE_TEMPO = 5.0    # secondes par rep
+FE_REPS  = 20
+FE_TEMPO = 3.0    # secondes par rep — endurance, pas contrôle excentrique
 FE_REPOS = 30
 
 
