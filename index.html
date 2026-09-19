@@ -2860,7 +2860,7 @@ const COIFFE = [
 ];
 
 const SEANCES = {
-  // ── LUNDI ────────────────────────────────────────────────────────
+  // ── LUNDI — matin Wing Chun, soir cardio ─────────────────────────
   '0-matin': [
     { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
     { pause:30 },
@@ -2873,20 +2873,14 @@ const SEANCES = {
     { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
   ],
   '0-soir': [
-    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763,
-      ex:[['ex-014','Pompes inclinées'],['ex-018','Tirage incliné']] },
+    { timer:'Cardio Zone 2', duree:1800, detail:'Course ou marche rapide — 129 à 141 bpm' },
     { pause:30 },
-    { mp3:'jeudi-fentes.mp3',    nom:'Fentes stationnaires G+D',  duree:480,
-      ex:[['ex-020','Fentes stationnaires']] },
-    { pause:30 },
-    ...COIFFE,
-    { pause:30 },
-    { timer:'Baat Jaam Do — Tam Lê', duree:420 },
+    { mp3:'cervical-circuit.mp3', nom:'Circuit cervical', duree:310 },
     { pause:20 },
     { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
   ],
 
-  // ── MARDI ────────────────────────────────────────────────────────
+  // ── MARDI — Force A + élévations ─────────────────────────────────
   '1-matin': [
     { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
     { pause:30 },
@@ -2897,21 +2891,20 @@ const SEANCES = {
     { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
   ],
   '1-soir': [
-    { mp3:'core-circuit.mp3', nom:'Circuit gainage', duree:526,
-      ex:[['ex-022','Hollow body hold'],['ex-023','Levées de jambes'],['ex-050','Dead bug']] },
+    { mp3:'jeudi-push-pull.mp3', nom:'Circuit pompes et tirages', duree:763,
+      ex:[['ex-014','Pompes inclinées'],['ex-018','Tirage incliné']] },
     { pause:30 },
-    { timer:'Pendule de Codman — gauche', duree:60 },
-    { pause:15 },
-    { timer:'Pendule de Codman — droite', duree:60 },
+    { mp3:'jeudi-fentes.mp3',    nom:'Fentes stationnaires G+D',  duree:480,
+      ex:[['ex-020','Fentes stationnaires']] },
     { pause:30 },
-    { mp3:'elevations-wc.mp3', nom:'Élévations Wing Chun', duree:304 },
+    { mp3:'elevations-wc.mp3',   nom:'Élévations Wing Chun',      duree:304 },
     { pause:30 },
-    { timer:'Muk Yan Jong — Tam Lê', duree:720 },
+    ...COIFFE,
     { pause:20 },
     { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
   ],
 
-  // ── MERCREDI ─────────────────────────────────────────────────────
+  // ── MERCREDI — matin seulement, soir atelier ─────────────────────
   '2-matin': [
     { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
     { pause:30 },
@@ -2924,14 +2917,10 @@ const SEANCES = {
     { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
   ],
   '2-soir': [
-    { timer:'Cardio Zone 2', duree:1800, detail:'Course ou marche rapide — 129 à 141 bpm' },
-    { pause:30 },
-    { mp3:'cervical-circuit.mp3', nom:'Circuit cervical', duree:310 },
-    { pause:30 },
-    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
   ],
 
-  // ── JEUDI ────────────────────────────────────────────────────────
+  // ── JEUDI — Force B ──────────────────────────────────────────────
   '3-matin': [
     { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
     { pause:30 },
@@ -2952,21 +2941,23 @@ const SEANCES = {
       ex:[['ex-052','Gainage latéral']] },
     { pause:30 },
     ...COIFFE,
-    { pause:30 },
-    { timer:'Luk Dim Boon Kwan — Tam Lê', duree:480 },
     { pause:20 },
     { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
   ],
 
-  // ── VENDREDI ─────────────────────────────────────────────────────
+  // ── VENDREDI — armes et mannequin le matin, atelier le soir ──────
   '4-matin': [
-    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+    { mp3:'warmup.mp3', nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { timer:'Baat Jaam Do — Tam Lê', duree:420 },
+    { pause:30 },
+    { timer:'Muk Yan Jong — Tam Lê', duree:720 },
   ],
   '4-soir': [
-    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
   ],
 
-  // ── SAMEDI ───────────────────────────────────────────────────────
+  // ── SAMEDI — rando ───────────────────────────────────────────────
   '5-matin': [
     { timer:'Rando 10 km — sac 4,5 kg (10 lb)', duree:5400, detail:'Zone 2 · charge stable 2 semaines avant progression · noter la tension cervicale à 1h' },
     { pause:30 },
@@ -2978,21 +2969,21 @@ const SEANCES = {
     { timer:'Luk Dim Boon Kwan — Tam Lê', duree:600, detail:'Léger, après la rando' },
   ],
 
-  // ── DIMANCHE ─────────────────────────────────────────────────────
+  // ── DIMANCHE — yoga le matin, atelier le soir ────────────────────
   '6-matin': [
     { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
   ],
   '6-soir': [
-    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
   ],
 };
 
 const TYPES_SEANCE = [
-  'Force — Push/Pull + Coiffe',
-  'Gainage + Muk Yan Jong',
   'Cardio Z2 + Mobilité cervicale',
-  'Force — Push/Pull + Gainage',
-  'Yoga — Iyengar Leçon 1',
+  'Force A — Push/Pull + Élévations',
+  'Wing Chun — Formes',
+  'Force B — Pont + Gainage + Coiffe',
+  'Wing Chun — Armes et mannequin',
   'Rando Phase 1',
   'Yoga — Iyengar Leçon 1',
 ];
@@ -3007,7 +2998,7 @@ function logDuJour(idx, moment) {
 }
 
 // Les jours qui ont une vraie séparation matin/soir affichent les boutons.
-const JOURS_AVEC_SPLIT = [0, 1, 2, 3];
+const JOURS_AVEC_SPLIT = [0, 1, 2, 3, 4, 6];
 
 // Développe un bloc de la table en objet exercice pour le lecteur.
 function blocVersExercice(b) {
