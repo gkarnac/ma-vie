@@ -582,6 +582,90 @@ def gen_portage():
     return encoder(brut, os.path.join(OUT, "portage.mp3"))
 
 
+
+# ==================================================================
+#  MARDI — GRIP ET CHAINE POSTERIEURE
+#  Sequence physiologique, pas horaire : ces deux blocs precedent le
+#  portage (boite/pointes) qui suit dans la table, quand le systeme
+#  nerveux et la prise sont encore frais.
+#  RDL : halteres SUSPENDUS entre les reps, jamais reposes au sol.
+#  Tempo controle, technique prioritaire sur la vitesse — historique
+#  cervical de Nicolas, pas de circuit rapide sur ce mouvement.
+# ==================================================================
+
+RDL = {
+    "intro": "Souleve de terre roumain, deux halteres. Les halteres restent "
+              "suspendus entre les repetitions, jamais deposes au sol. "
+              "Dos plat du debut a la fin.",
+    "desc":  "Descends en poussant les hanches vers l'arriere, genoux "
+              "legerement flechis, en trois secondes. Remonte en poussant "
+              "les hanches vers l'avant, en deux secondes.",
+    "s1":    "Serie un. Dix repetitions. Pars.",
+    "s2":    "Serie deux. Pars.",
+    "s3":    "Serie trois. Derniere serie. Pars.",
+    "repos": "Repos. Trente secondes.",
+    "fin":   "Souleve de terre termine.",
+}
+RDL_REPS  = 10
+RDL_DESC  = 3.0
+RDL_MONT  = 2.0
+RDL_REPOS = 30
+
+
+def gen_rdl():
+    v = {k: voix(f"rdl_{k}", t, 0.9) for k, t in RDL.items()}
+    desc = pad(voix("rdl_v_desc", "Descends\u2026", 0.9), RDL_DESC,
+               os.path.join(TMP, "rdl_ph_desc.wav"))
+    mont = pad(voix("rdl_v_mont", "Remonte\u2026", 0.9), RDL_MONT,
+               os.path.join(TMP, "rdl_ph_mont.wav"))
+    serie = cat([desc, mont] * RDL_REPS, os.path.join(TMP, "rdl_serie.wav"))
+
+    def bloc(cle, repos=True):
+        p = [v[cle], serie]
+        if repos:
+            p += [v["repos"], bip(RDL_REPOS)]
+        return p
+
+    parts = [v["intro"], v["desc"]]
+    parts += bloc("s1")
+    parts += bloc("s2")
+    parts += bloc("s3", repos=False)
+    parts += [v["fin"]]
+    brut = cat(parts, os.path.join(TMP, "rdl.wav"))
+    return encoder(brut, os.path.join(OUT, "rdl.mp3"))
+
+
+GR = {
+    "intro": "Pendaison a la barre. Grip. Trois series. Accroche-toi, "
+             "epaules actives, ne relache pas passivement.",
+    "s1":    "Serie un. Trente secondes.",
+    "s2":    "Serie deux.",
+    "s3":    "Serie trois. Derniere serie.",
+    "repos": "Repos.",
+    "fin":   "Grip termine.",
+}
+GR_TENUE = 30
+GR_REPOS = 30
+
+
+def gen_grip():
+    v = {k: voix(f"gr_{k}", t, 0.9) for k, t in GR.items()}
+
+    def bloc(cle, repos=True):
+        p = [v[cle], bip(GR_TENUE)]
+        if repos:
+            p += [v["repos"], bip(GR_REPOS)]
+        return p
+
+    parts = [v["intro"]]
+    parts += bloc("s1")
+    parts += bloc("s2")
+    parts += bloc("s3", repos=False)
+    parts += [v["fin"]]
+    brut = cat(parts, os.path.join(TMP, "grip.wav"))
+    return encoder(brut, os.path.join(OUT, "grip.mp3"))
+
+
 # ── pilote ──────────────────────────────────────────────────────────────
 
 SEANCES = {
@@ -594,6 +678,8 @@ SEANCES = {
     "coiffe":    gen_coiffe,
     "trapezes":  gen_trapezes,
     "portage":   gen_portage,
+    "rdl":       gen_rdl,
+    "grip":      gen_grip,
 }
 
 FICHIERS = {
@@ -606,6 +692,8 @@ FICHIERS = {
     "coiffe":    "coiffe-rotations.mp3",
     "trapezes":  "trapezes.mp3",
     "portage":   "portage.mp3",
+    "rdl":       "rdl.mp3",
+    "grip":      "grip.mp3",
 }
 
 
