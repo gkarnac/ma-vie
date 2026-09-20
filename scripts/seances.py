@@ -230,8 +230,8 @@ def gen_push_pull():
 FE = {
     "intro":  "Fentes stationnaires. Kicking Strength. Trois rounds. "
               "Alternance gauche droite.",
-    "desc":   "Rythme soutenu. Descends, remonte, sans arrêt en bas.",
-    "r1":     "Round un. Jambe gauche devant. Vingt répétitions. Pars.",
+    "desc":   "Descente lente en quatre secondes. C'est elle qui prepare les descentes du sentier.",
+    "r1":     "Round un. Jambe gauche devant. Douze repetitions. Pars.",
     "r2":     "Round deux. Jambe gauche. Pars.",
     "r3":     "Round trois. Dernier round. Jambe gauche. Pars.",
     "droite": "Jambe droite. Pars.",
@@ -240,18 +240,21 @@ FE = {
     "fin":    "Terminé. Beau travail.",
 }
 
-FE_REPS  = 20
-FE_TEMPO = 3.0    # secondes par rep — endurance, pas contrôle excentrique
+FE_REPS  = 12
+FE_DESC  = 4.0    # s - excentrique, phase qui prepare les descentes
+FE_MONT  = 2.0    # s - concentrique
 FE_REPOS = 30
 
 
 def gen_fentes():
+    """Priorite rando : c'est la descente qui detruit les jambes sur le WCT.
+    L'excentrique de 4 s prime sur le nombre de repetitions."""
     v = {k: voix(f"fe_{k}", t) for k, t in FE.items()}
-    reps = []
-    for i in range(1, FE_REPS + 1):
-        brut = voix(f"fe_n{i}", NUMS[i - 1] + ".", rate=1.25)
-        reps.append(pad(brut, FE_TEMPO, os.path.join(TMP, f"fe_r{i}.wav")))
-    jambe = cat(reps, os.path.join(TMP, "fe_jambe.wav"))
+    desc = pad(voix("fe_v_desc", "Descends\u2026", 0.9), FE_DESC,
+               os.path.join(TMP, "fe_ph_desc.wav"))
+    mont = pad(voix("fe_v_mont", "Remonte\u2026", 0.9), FE_MONT,
+               os.path.join(TMP, "fe_ph_mont.wav"))
+    jambe = cat([desc, mont] * FE_REPS, os.path.join(TMP, "fe_jambe.wav"))
 
     def round_(cle, droite, repos=True):
         p = [v[cle], jambe, bip(5), v[droite], jambe]
@@ -518,6 +521,67 @@ def gen_trapezes():
     return encoder(brut, os.path.join(OUT, "trapezes.mp3"))
 
 
+
+# ======================================================================
+#  PORTAGE - mardi soir, oriente West Coast Trail
+#  Le sentier compte plus de 70 echelles, des champs de blocs et de
+#  longues descentes. Les montees sur boite transferent aux echelles,
+#  les montees sur pointes a la cheville sur terrain instable.
+#  CHARGE : veste lestee uniquement, jamais d'halteres en main - la
+#  traction sur les trapezes est ce qui fait tirer le cou en rando.
+#  Les pointes se font SUR UNE JAMBE : la veste plafonne a 20 lb, ce
+#  qui est trop leger pour un mollet sur deux jambes.
+# ======================================================================
+
+PO = {
+    "intro":  "S\u00e9ance portage. Mont\u00e9es sur bo\u00eete et mont\u00e9es sur pointes. "
+              "Veste lest\u00e9e, pas d'halt\u00e8res.",
+    "boite":  "Mont\u00e9es sur bo\u00eete. Pied entier sur la bo\u00eete, pousse avec la jambe "
+              "du dessus. Dix r\u00e9p\u00e9titions.",
+    "b_g":    "Jambe gauche.",
+    "b_d":    "Jambe droite.",
+    "pointe": "Mont\u00e9es sur pointes, une jambe. Appuie-toi du bout des doigts "
+              "pour l'\u00e9quilibre, pas pour t'aider. Quinze r\u00e9p\u00e9titions.",
+    "p_g":    "Mollet gauche.",
+    "p_d":    "Mollet droit.",
+    "repos":  "Repos.",
+    "fin":    "S\u00e9ance portage termin\u00e9e.",
+}
+
+PO_BOITE  = 10
+PO_POINTE = 15
+PO_SERIES = 3
+PO_ANN    = 8.0
+
+
+def gen_portage():
+    v = {k: voix(f"po_{k}", t, 0.9) for k, t in PO.items()}
+    monte  = pad(voix("po_v_monte", "Monte\u2026",    0.9), 2.0, os.path.join(TMP, "po_ph_m.wav"))
+    desc   = pad(voix("po_v_desc",  "Descends\u2026", 0.9), 3.0, os.path.join(TMP, "po_ph_d.wav"))
+    pmonte = pad(voix("po_v_pm",    "Monte\u2026",    0.9), 2.0, os.path.join(TMP, "po_ph_pm.wav"))
+    pdesc  = pad(voix("po_v_pd",    "Descends\u2026", 0.9), 2.0, os.path.join(TMP, "po_ph_pd.wav"))
+
+    def cote(ann, phases, reps):
+        a = pad(v[ann], PO_ANN, os.path.join(TMP, f"po_a_{ann}_{reps}.wav"))
+        return [a] + phases * reps
+
+    parts = [v["intro"], v["boite"]]
+    for s in range(PO_SERIES):
+        parts += cote("b_g", [monte, desc], PO_BOITE)
+        parts += cote("b_d", [monte, desc], PO_BOITE)
+        if s < PO_SERIES - 1:
+            parts += [v["repos"], bip(30)]
+    parts += [v["repos"], bip(30), v["pointe"]]
+    for s in range(PO_SERIES):
+        parts += cote("p_g", [pmonte, pdesc], PO_POINTE)
+        parts += cote("p_d", [pmonte, pdesc], PO_POINTE)
+        if s < PO_SERIES - 1:
+            parts += [v["repos"], bip(25)]
+    parts += [v["fin"]]
+    brut = cat(parts, os.path.join(TMP, "portage.wav"))
+    return encoder(brut, os.path.join(OUT, "portage.mp3"))
+
+
 # ── pilote ──────────────────────────────────────────────────────────────
 
 SEANCES = {
@@ -529,6 +593,7 @@ SEANCES = {
     "cervical":  gen_cervical,
     "coiffe":    gen_coiffe,
     "trapezes":  gen_trapezes,
+    "portage":   gen_portage,
 }
 
 FICHIERS = {
@@ -540,6 +605,7 @@ FICHIERS = {
     "cervical":  "cervical-circuit.mp3",
     "coiffe":    "coiffe-rotations.mp3",
     "trapezes":  "trapezes.mp3",
+    "portage":   "portage.mp3",
 }
 
 
