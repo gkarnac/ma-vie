@@ -2814,10 +2814,12 @@ function initWingChunPage() {
   } else {
     // Réappliquer sans remettre à zéro le timer si déjà en cours
     applyDayButtons(S.seanceDayIdx);
-    const w = effectiveWeekly()[S.seanceDayIdx];
-    document.getElementById('seance-type-label').textContent = w.type;
-    document.getElementById('seance-type-label').style.color = w.color;
-    renderExLog(w.log);
+    applyMomentButtons(S.seanceDayIdx, S.seanceMoment);
+    const cfg = DAY_CONFIG[S.seanceDayIdx] || {};
+    const lbl = document.getElementById('seance-type-label');
+    lbl.textContent = typeDuJour(S.seanceDayIdx);
+    lbl.style.color = cfg.color || '';
+    renderExLog(logDuJour(S.seanceDayIdx, S.seanceMoment || 'soir'));
     buildRpeGrid();
     stbRender();
   }
@@ -2993,6 +2995,15 @@ const SEANCES = {
     { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
   ],
 };
+
+// Source unique du libellé d'une séance — la même que celle affichée à
+// l'écran. effectiveWeekly()[idx].type vient de WEEKLY, un relique d'avant
+// la table SEANCES : il est resté figé sur d'anciens noms (« Renforcement A
+// — Planche + Coiffe », etc.) et ne suit plus les jours réels. C'est ce qui
+// causait un libellé enregistré différent de celui affiché.
+function typeDuJour(idx) {
+  return TYPES_SEANCE[idx] || (DAY_CONFIG[idx] && DAY_CONFIG[idx].type) || '';
+}
 
 const TYPES_SEANCE = [
   'Cardio Z2 + Mobilité cervicale',
@@ -3420,6 +3431,7 @@ function selRpe(n, btn) {
 async function saveSeanceComplete() {
   if (S.seanceDayIdx === null) { toast('Choisis d\'abord un jour.'); return; }
   const w = effectiveWeekly()[S.seanceDayIdx];
+  const typeReel = typeDuJour(S.seanceDayIdx);
   const seanceId = 'S' + Date.now();
   const rows = document.querySelectorAll('#ex-log-card .ex-log-row');
   const log = [];
@@ -3439,7 +3451,7 @@ async function saveSeanceComplete() {
   const seance = {
     id: seanceId,
     date: S.todayStr,
-    type: w.type,
+    type: typeReel,
     statut: 'Complété',
     rpe: S.seanceRpe || null,
     duree: totalMin,
@@ -3453,7 +3465,7 @@ async function saveSeanceComplete() {
   flushMp3Cache();
   // Ouvrir le popup post-séance (RPE sera capturé là)
   S.postTimerSeanceId = seanceId;
-  openPostTimerModal({habitude_nom: w.type, duree_prevue: totalMin});
+  openPostTimerModal({habitude_nom: typeReel, duree_prevue: totalMin});
 }
 
 function renderWcFormes() {
