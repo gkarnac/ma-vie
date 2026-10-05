@@ -1714,7 +1714,7 @@ const WEEKLY = [
   { label:"Mardi",    type:"Force A — Push/Pull + Élévations",        color:"#BA7517" },
   { label:"Mercredi", type:"Wing Chun — Formes",                      color:"#27AE60" },
   { label:"Jeudi",    type:"Force B — Pont + Gainage + Coiffe",       color:"#2980B9" },
-  { label:"Vendredi", type:"Wing Chun — Armes et mannequin",          color:"#8E44AD" },
+  { label:"Vendredi", type:"Wing Chun — Armes",          color:"#8E44AD" },
   { label:"Samedi",   type:"Rando Phase 1",                           color:"#16A085" },
   { label:"Dimanche", type:"Yoga — Iyengar Leçon 1",                  color:"#888" },
 ];
@@ -2442,13 +2442,26 @@ async function savePostTimer() {
   const locs = [...document.querySelectorAll('.tg[data-g="ptloc"].on')].map(t => t.getAttribute('data-v'));
   const note = document.getElementById('pt-note').value.trim();
   const hab = plan ? S.habitudes.find(h => h.id === plan.habitude_id) : null;
+  // Les poids saisis et les drapeaux douleur par exercice n'ont pas de colonne
+  // dans le Sheet (WcSeances) : on les écrit dans les notes du journal pour
+  // qu'ils survivent à la synchronisation et apparaissent dans le résumé.
+  const lg = Array.isArray(S.lastSeanceLog) ? S.lastSeanceLog : [];
+  const charges = lg.filter(x => x.poids && String(x.poids).trim()).map(x => {
+    const p = String(x.poids).trim();
+    return x.nom + ' ' + p + (/[a-z]/i.test(p) ? '' : ' lb');
+  });
+  const flags = lg.filter(x => x.douleur).map(x => x.nom);
+  let suffixeLog = '';
+  if (charges.length) suffixeLog += ' | Charges : ' + charges.join(' ; ');
+  if (flags.length)   suffixeLog += ' | Douleur : ' + flags.join(' ; ');
+  S.lastSeanceLog = null;
   const entry = {
     id: Date.now(), date: S.selectedDay, time: timeStr, pain: S.postTimerPain,
     locations: locs, medications: [],
     exercises: hab ? [hab.nom] : (plan ? [plan.habitude_nom] : []),
     duration: plan ? (plan.duree_reelle || plan.duree_prevue) : null,
     intensity: S.seanceRpe || null, events: [],
-    notes: note || ('Post-session ' + (plan ? plan.habitude_nom : '')),
+    notes: (note || ('Post-session ' + (plan ? plan.habitude_nom : ''))) + suffixeLog,
     ex_eval: Object.keys(S.postTimerExEval || {}).length ? JSON.stringify(S.postTimerExEval) : null,
     source: 'post-timer'
   };
@@ -2709,6 +2722,8 @@ const SEANCES = {
     { timer:'Siu Lim Tao — Tam Lê', duree:420, detail:'Sans veste — forme complète' },
     { pause:20 },
     { timer:'Chum Kiu — Tam Lê',    duree:420, detail:'Sans veste — forme complète' },
+    { pause:20 },
+    { timer:'Biu Jee — Tam Lê',     duree:420, detail:'Sans veste — forme complète' },
     { pause:30 },
     { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
   ],
@@ -2726,7 +2741,7 @@ const SEANCES = {
     { pause:30 },
     { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
     { pause:30 },
-    { timer:'Biu Jee — Tam Lê', duree:420, detail:'Veste lestée — forme complète' },
+    { timer:'Wing Chun Tong — Denis Shink', duree:420, detail:'Veste lestée — forme complète' },
     { pause:30 },
     { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
   ],
@@ -2754,9 +2769,9 @@ const SEANCES = {
     { pause:30 },
     { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
     { pause:30 },
-    { timer:'Wing Chun Tong — Denis Shink', duree:420, detail:'Sans veste — forme complète' },
+    { timer:'Siu Lim Tao — Chan Wah Shan', duree:420, detail:'Sans veste — forme complète' },
     { pause:20 },
-    { timer:'Siu Lim Tao — Ip Man',         duree:420, detail:'Sans veste — forme complète' },
+    { timer:'Siu Lim Tao — Ip Man',        duree:420, detail:'Sans veste — forme complète' },
     { pause:30 },
     { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
     { pause:30 },
@@ -2773,7 +2788,7 @@ const SEANCES = {
     { pause:30 },
     { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
     { pause:30 },
-    { timer:'Siu Lim Tao — Chan Wah Shan', duree:420, detail:'Veste lestée — forme complète' },
+    { timer:'Muk Yan Jong — Tam Lê', duree:720, detail:'Mannequin seul — veste lestée optionnelle' },
     { pause:30 },
     { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
   ],
@@ -2802,9 +2817,7 @@ const SEANCES = {
     { pause:20 },
     { timer:'Baat Jaam Do — Ip Man', duree:420 },
     { pause:30 },
-    { timer:'Muk Yan Jong — Tam Lê', duree:720 },
-    { pause:30 },
-    { timer:'Pendule de Codman — gauche', duree:60, detail:'Décompression après le mannequin' },
+    { timer:'Pendule de Codman — gauche', duree:60, detail:'Décompression de l\'épaule' },
     { pause:15 },
     { timer:'Pendule de Codman — droite', duree:60 },
     { pause:30 },
@@ -2850,7 +2863,7 @@ const TYPES_SEANCE = [
   'Force A — Push/Pull + Élévations',
   'Wing Chun — Formes',
   'Force B — Pont + Gainage + Coiffe',
-  'Wing Chun — Armes et mannequin',
+  'Wing Chun — Armes',
   'Rando Phase 1',
   'Yoga — Iyengar Leçon 1',
 ];
@@ -3305,6 +3318,7 @@ async function saveSeanceComplete() {
   flushMp3Cache();
   // Ouvrir le popup post-séance (RPE sera capturé là)
   S.postTimerSeanceId = seanceId;
+  S.lastSeanceLog = log;
   openPostTimerModal({habitude_nom: typeReel, duree_prevue: totalMin});
 }
 
@@ -3698,12 +3712,21 @@ function buildDataSummary() {
     // Nombre d'exercices marqués "douleur" dans le log
     (s.log || []).forEach(ex => { if (ex.pain) seancesByType[k].pain++; });
   });
+  // Le RPE est enregistré dans le Journal (colonne intensity). WcSeances n'a
+  // pas de colonne RPE : s.rpe disparaît à la synchronisation suivante, d'où
+  // des « N/A » partout alors que la valeur existait bel et bien.
+  const rpeJournal = {};
+  recentEntries.forEach(e => {
+    if (e.intensity == null || isNaN(e.intensity)) return;
+    (e.exercises || []).forEach(ex => { (rpeJournal[ex] = rpeJournal[ex] || []).push(Number(e.intensity)); });
+  });
   const seancesResume = {};
   Object.keys(seancesByType).forEach(k => {
     const v = seancesByType[k];
+    const rpes = (rpeJournal[k] && rpeJournal[k].length) ? rpeJournal[k] : v.rpe;
     seancesResume[k] = {
       count: v.count,
-      rpe_moyen: v.rpe.length ? (v.rpe.reduce((a,b)=>a+b,0)/v.rpe.length).toFixed(1) : 'N/A',
+      rpe_moyen: rpes.length ? (rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1) : 'N/A',
       duree_totale: Math.round(v.duree),
       drapeaux_douleur: v.pain
     };
