@@ -614,6 +614,8 @@ textarea{resize:vertical;min-height:68px}
     <input type="text" id="new-med-dose" placeholder="Dose" style="width:90px">
     <button class="btn2 btn-sm" onclick="addMedParam()">+</button>
   </div>
+  <p class="slabel">Pyramide WCT — retour à l'entraînement</p>
+  <div class="card" id="pyramide-wrap"></div>
   <p class="slabel">Programme d'entraînement</p>
   <div class="card">
     <div id="weekly-override-status" style="font-size:12px;color:var(--txt2);margin-bottom:10px">—</div>
@@ -1494,7 +1496,7 @@ function goPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'analyse') renderAnalyse();
-  if (id === 'parametres') { renderParamHab(); renderParamMed(); renderWeeklyStatus(); populateVoiceSelect(); }
+  if (id === 'parametres') { renderParamHab(); renderParamMed(); renderWeeklyStatus(); populateVoiceSelect(); renderPyramide(); }
   if (id === 'coach') initCoachPage();
   if (id === 'wingchun') initWingChunPage();
 }
@@ -1761,9 +1763,9 @@ function getWcProgram(type) {
   // on retrouve le jour par son libellé dans TYPES_SEANCE, puis on lit
   // la table SEANCES. Avant, ce chemin servait les anciens tableaux de
   // DAY_CONFIG, donc un engagement rejouait le programme d'avant la refonte.
-  let idx = TYPES_SEANCE.indexOf(type);
+  let idx = typesActifs().indexOf(type);
   if (idx === -1) {
-    idx = TYPES_SEANCE.findIndex(t => t && type && t.toLowerCase() === String(type).toLowerCase());
+    idx = typesActifs().findIndex(t => t && type && t.toLowerCase() === String(type).toLowerCase());
   }
   if (idx === -1) idx = (S.seanceDayIdx !== null && S.seanceDayIdx !== undefined) ? S.seanceDayIdx : 0;
   return seanceDuJour(idx, 'soir');
@@ -2855,7 +2857,7 @@ const SEANCES = {
 // — Planche + Coiffe », etc.) et ne suit plus les jours réels. C'est ce qui
 // causait un libellé enregistré différent de celui affiché.
 function typeDuJour(idx) {
-  return TYPES_SEANCE[idx] || (DAY_CONFIG[idx] && DAY_CONFIG[idx].type) || '';
+  return typesActifs()[idx] || (DAY_CONFIG[idx] && DAY_CONFIG[idx].type) || '';
 }
 
 const TYPES_SEANCE = [
@@ -2868,9 +2870,190 @@ const TYPES_SEANCE = [
   'Yoga — Iyengar Leçon 1',
 ];
 
+// ═══════════════════════════════════════════════════════════════════
+//  PYRAMIDE WCT — retour à l'entraînement vers la West Coast Trail
+//  Départ lundi 9 nov. 2026, WCT provisoire le 1er juin 2027 (29 sem.).
+//  Seul le niveau 0 a sa semaine type ; les niveaux 1 à 5 affichent
+//  encore le programme complet ci-dessus (SEANCES) en attendant d'être
+//  construits un à un, quand le critère du niveau précédent est atteint.
+// ═══════════════════════════════════════════════════════════════════
+const PYRAMIDE_DEBUT = '2026-11-09';
+const PYRAMIDE_CLE = 'wct_niveau';
+const NIVEAUX = [
+  { n:0, nom:'Reprise',          sem:'1-2',   dates:'9-22 nov',    charge:'aucune',
+    critere:'5 séances par semaine pendant 2 semaines, douleur ≤ 3/10', construit:true },
+  { n:1, nom:'Base aérobie',     sem:'3-6',   dates:'23 nov-20 déc', charge:'aucune',
+    critere:'Zone 2 de 45 min en continu, rando de 8 km à RPE ≤ 5' },
+  { n:2, nom:'Charge',           sem:'7-12',  dates:'21 déc-31 jan', charge:'10 → 20 lb',
+    critere:'12 km avec 20 lb, douleur du lendemain ≤ 3 sur 2 sorties' },
+  { n:3, nom:'Endurance',        sem:'13-19', dates:'1 fév-21 mars', charge:'20 → 30 lb',
+    critere:'2 jours de suite à 12 km avec 30 lb, récupération correcte' },
+  { n:4, nom:'Spécifique WCT',   sem:'20-27', dates:'22 mars-16 mai', charge:'30 → 45 lb',
+    critere:'Week-end de 2 jours à 20 km+ par jour avec la charge cible' },
+  { n:5, nom:'Affûtage',         sem:'28-29', dates:'17-30 mai',    charge:'sac final pesé',
+    critere:'Cou stable, équipement prêt' },
+];
+
+const TYPES_N0 = [
+  'Reprise — Formes + Marche',
+  'Reprise — Physio B',
+  'Reprise — Formes',
+  'Reprise — Physio + Gainage + Marche',
+  'Reprise — Formes + Armes',
+  'Reprise — Marche longue',
+  'Yoga — Iyengar Leçon 1',
+];
+
+const SEANCES_N0 = {
+  // ── LUNDI — formes + marche et circuit cervical ──────────────────
+  '0-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Siu Lim Tao — Tam Lê', duree:420, detail:'Sans veste — forme complète' },
+    { pause:30 },
+    { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
+  ],
+  '0-soir': [
+    { timer:'Marche — 30 min', duree:1800, detail:'Sans charge · rythme confortable · noter la tension cervicale' },
+    { pause:30 },
+    { mp3:'cervical-circuit.mp3', nom:'Circuit cervical', duree:310 },
+  ],
+
+  // ── MARDI — physio B, soir de repos ──────────────────────────────
+  '1-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
+  ],
+  '1-soir': [
+    { timer:'Repos — récupération', duree:60, detail:'Pas d\'entraînement ce soir' },
+  ],
+
+  // ── MERCREDI — formes le matin, atelier le soir ──────────────────
+  '2-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'kicks.mp3',    nom:'Kicks — 5 types',        duree:232 },
+    { pause:30 },
+    { timer:'Chum Kiu — Tam Lê', duree:420, detail:'Sans veste — forme complète' },
+    { pause:20 },
+    { timer:'Biu Jee — Tam Lê',  duree:420, detail:'Sans veste — forme complète' },
+    { pause:30 },
+    { mp3:'physio-A.mp3', nom:'Physio WCT — Abduction hanche', duree:307 },
+  ],
+  '2-soir': [
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
+  ],
+
+  // ── JEUDI — physio B + gainage le matin, marche le soir ──────────
+  '3-matin': [
+    { mp3:'warmup.mp3',   nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { mp3:'physio-B.mp3', nom:'Physio WCT — Flexion hanche', duree:835 },
+    { pause:30 },
+    { mp3:'core-circuit.mp3', nom:'Circuit gainage', duree:526,
+      ex:[['ex-022','Hollow body hold'],['ex-023','Levées de jambes'],['ex-050','Dead bug']] },
+  ],
+  '3-soir': [
+    { timer:'Marche — 35 min', duree:2100, detail:'Sans charge · rythme confortable' },
+    { pause:30 },
+    { mp3:'cooldown.mp3', nom:'Retour au calme', duree:531 },
+  ],
+
+  // ── VENDREDI — formes et armes le matin, atelier le soir ─────────
+  '4-matin': [
+    { mp3:'warmup.mp3', nom:'Échauffement Wing Chun', duree:410 },
+    { pause:30 },
+    { timer:'Siu Lim Tao — Tam Lê',  duree:420, detail:'Sans veste — forme complète' },
+    { pause:20 },
+    { timer:'Baat Jaam Do — Tam Lê', duree:420 },
+    { pause:20 },
+    { timer:'Baat Jaam Do — Ip Man', duree:420 },
+  ],
+  '4-soir': [
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
+  ],
+
+  // ── SAMEDI — marche longue ───────────────────────────────────────
+  '5-matin': [
+    { timer:'Marche longue — 40 min', duree:2400, detail:'Ou sortie de 4-5 km · sans charge · noter la tension cervicale à 30 min' },
+  ],
+  '5-soir': [
+    { timer:'Marche longue — 40 min', duree:2400, detail:'Ou sortie de 4-5 km · sans charge · noter la tension cervicale à 30 min' },
+  ],
+
+  // ── DIMANCHE — yoga le matin, atelier le soir ────────────────────
+  '6-matin': [
+    { mp3:'dimanche-yoga.mp3', nom:'Yoga Iyengar — Leçon 1', duree:1487 },
+  ],
+  '6-soir': [
+    { timer:'Atelier — projets artistiques', duree:60, detail:'Soirée libre, pas d\'entraînement' },
+  ],
+};
+
+// Niveau de la pyramide, mémorisé dans ce navigateur (0 par défaut).
+function niveauActif() {
+  try {
+    const v = parseInt(localStorage.getItem(PYRAMIDE_CLE), 10);
+    if (v >= 0 && v <= 5) return v;
+  } catch (e) {}
+  return 0;
+}
+function setNiveau(n) {
+  try { localStorage.setItem(PYRAMIDE_CLE, String(n)); } catch (e) {}
+  renderPyramide();
+  if (S.seanceDayIdx !== null && S.seanceDayIdx !== undefined) {
+    try { selectSeanceDay(S.seanceDayIdx, S.seanceMoment || 'soir'); } catch (e) {}
+  }
+}
+// Tables en vigueur : niveau 0 → semaine de reprise, sinon programme complet.
+function seancesActives() { return niveauActif() === 0 ? SEANCES_N0 : SEANCES; }
+function typesActifs()    { return niveauActif() === 0 ? TYPES_N0   : TYPES_SEANCE; }
+
+function pyramideSemaine() {
+  const d0 = new Date(PYRAMIDE_DEBUT + 'T00:00:00');
+  const j = Math.floor((new Date() - d0) / 86400000);
+  return j < 0 ? 0 : Math.floor(j / 7) + 1;
+}
+
+function renderPyramide() {
+  const el = document.getElementById('pyramide-wrap');
+  if (!el) return;
+  const act = niveauActif();
+  const sem = pyramideSemaine();
+  const semTxt = sem === 0 ? 'Départ le lundi 9 novembre' : (sem > 29 ? 'Après la date prévue' : 'Semaine ' + sem + ' sur 29');
+  let h = '<div style="font-size:12px;color:var(--txt2);margin-bottom:10px">' + semTxt +
+          ' · West Coast Trail provisoire le 1er juin 2027 · sac cible 30 à 45 lb</div>';
+  NIVEAUX.slice().reverse().forEach(nv => {
+    const actif = nv.n === act;
+    h += '<div style="border:1px solid ' + (actif ? 'var(--accent)' : 'var(--border)') +
+         ';border-radius:8px;padding:8px 10px;margin-bottom:6px;' +
+         (actif ? 'background:rgba(255,255,255,0.04)' : '') + '">' +
+         '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600">' +
+         '<span>Niveau ' + nv.n + ' — ' + nv.nom + '</span>' +
+         '<span style="color:var(--txt2);font-weight:400">' + nv.dates + '</span></div>' +
+         '<div style="font-size:11px;color:var(--txt2);margin-top:3px">Charge : ' + nv.charge + '</div>' +
+         '<div style="font-size:11px;color:var(--txt3);margin-top:2px">Pour monter : ' + nv.critere + '</div>' +
+         (actif ? '<div style="font-size:11px;color:var(--accent);margin-top:3px">● Niveau actuel' +
+                  (nv.construit ? '' : ' — semaine type à construire, programme complet affiché') + '</div>' : '') +
+         '</div>';
+  });
+  h += '<div style="display:flex;gap:8px;margin-top:8px">' +
+       '<button class="btn2 btn-sm" style="flex:1" ' + (act <= 0 ? 'disabled' : '') + ' onclick="setNiveau(' + (act - 1) + ')">− Niveau précédent</button>' +
+       '<button class="btn2 btn-sm" style="flex:1;border-color:var(--accent);color:var(--accent)" ' + (act >= 5 ? 'disabled' : '') + ' onclick="confirmerNiveauSuivant()">Niveau suivant +</button></div>';
+  el.innerHTML = h;
+}
+function confirmerNiveauSuivant() {
+  const act = niveauActif();
+  const nv = NIVEAUX[act];
+  if (confirm('Critère du niveau ' + act + ' atteint ?\n\n' + nv.critere + '\n\nPasser au niveau ' + (act + 1) + ' ?')) setNiveau(act + 1);
+}
+
 // Liste pour le journal de fin de séance, dérivée de la table elle-même.
 function logDuJour(idx, moment) {
-  const t = SEANCES[idx + '-' + moment] || [];
+  const t = seancesActives()[idx + '-' + moment] || [];
   return t.filter(b => b.pause === undefined)
           .map(b => ({ n: b.mp3 ? b.nom : b.timer,
                        s: 1,
@@ -2895,7 +3078,8 @@ function blocVersExercice(b) {
 }
 
 function seanceDuJour(idx, moment) {
-  const table = SEANCES[idx + '-' + moment] || SEANCES[idx + '-soir'] || [];
+  const tbl = seancesActives();
+  const table = tbl[idx + '-' + moment] || tbl[idx + '-soir'] || [];
   return table.map(blocVersExercice);
 }
 
@@ -2953,7 +3137,7 @@ function selectSeanceDay(idx, moment) {
   const cfg = DAY_CONFIG[idx] || {};
   const lbl = document.getElementById('seance-type-label');
   if (lbl) {
-    lbl.innerHTML = TYPES_SEANCE[idx] || cfg.type || '';
+    lbl.innerHTML = typesActifs()[idx] || cfg.type || '';
     lbl.style.color = cfg.color || '';
   }
   const btn = document.getElementById('stb-play');
