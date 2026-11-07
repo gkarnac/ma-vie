@@ -2879,18 +2879,20 @@ const TYPES_SEANCE = [
 // ═══════════════════════════════════════════════════════════════════
 const PYRAMIDE_DEBUT = '2026-11-09';
 const PYRAMIDE_CLE = 'wct_niveau';
+// Séances prévues par semaine (semaine type du niveau 0 : 9). Total d'un niveau = semaines × ce nombre.
+const SEANCES_PAR_SEM = 9;
 const NIVEAUX = [
-  { n:0, nom:'Reprise',          sem:'1-2',   dates:'9-22 nov',    charge:'aucune',
+  { n:0, semaines:2, nom:'Reprise',          sem:'1-2',   dates:'9-22 nov',    charge:'aucune',
     critere:'5 séances par semaine pendant 2 semaines, douleur ≤ 3/10', construit:true },
-  { n:1, nom:'Base aérobie',     sem:'3-6',   dates:'23 nov-20 déc', charge:'aucune',
+  { n:1, semaines:4, nom:'Base aérobie',     sem:'3-6',   dates:'23 nov-20 déc', charge:'aucune',
     critere:'Zone 2 de 45 min en continu, rando de 8 km à RPE ≤ 5' },
-  { n:2, nom:'Charge',           sem:'7-12',  dates:'21 déc-31 jan', charge:'10 → 20 lb',
+  { n:2, semaines:6, nom:'Charge',           sem:'7-12',  dates:'21 déc-31 jan', charge:'10 → 20 lb',
     critere:'12 km avec 20 lb, douleur du lendemain ≤ 3 sur 2 sorties' },
-  { n:3, nom:'Endurance',        sem:'13-19', dates:'1 fév-21 mars', charge:'20 → 30 lb',
+  { n:3, semaines:7, nom:'Endurance',        sem:'13-19', dates:'1 fév-21 mars', charge:'20 → 30 lb',
     critere:'2 jours de suite à 12 km avec 30 lb, récupération correcte' },
-  { n:4, nom:'Spécifique WCT',   sem:'20-27', dates:'22 mars-16 mai', charge:'30 → 45 lb',
+  { n:4, semaines:8, nom:'Spécifique WCT',   sem:'20-27', dates:'22 mars-16 mai', charge:'30 → 45 lb',
     critere:'Week-end de 2 jours à 20 km+ par jour avec la charge cible' },
-  { n:5, nom:'Affûtage',         sem:'28-29', dates:'17-30 mai',    charge:'sac final pesé',
+  { n:5, semaines:2, nom:'Affûtage',         sem:'28-29', dates:'17-30 mai',    charge:'sac final pesé',
     critere:'Cou stable, équipement prêt' },
 ];
 
@@ -3001,8 +3003,22 @@ function niveauActif() {
   } catch (e) {}
   return 0;
 }
+function pyramideLire(cle, def) {
+  try { const v = JSON.parse(localStorage.getItem(cle)); return v === null || v === undefined ? def : v; } catch (e) { return def; }
+}
+function pyramideEcrire(cle, v) {
+  try { localStorage.setItem(cle, JSON.stringify(v)); } catch (e) {}
+}
+// Date de début de chaque niveau atteint (le niveau 0 démarre le 9 nov.).
+function niveauDebut(n) {
+  const d = pyramideLire('wct_debuts', {});
+  if (d[n]) return d[n];
+  return n === 0 ? PYRAMIDE_DEBUT : null;
+}
 function setNiveau(n) {
   try { localStorage.setItem(PYRAMIDE_CLE, String(n)); } catch (e) {}
+  const d = pyramideLire('wct_debuts', {});
+  if (!d[n] && n > 0) { d[n] = localDateStr(new Date()); pyramideEcrire('wct_debuts', d); }
   renderPyramide();
   if (S.seanceDayIdx !== null && S.seanceDayIdx !== undefined) {
     try { selectSeanceDay(S.seanceDayIdx, S.seanceMoment || 'soir'); } catch (e) {}
@@ -3018,37 +3034,76 @@ function pyramideSemaine() {
   return j < 0 ? 0 : Math.floor(j / 7) + 1;
 }
 
+// Séances complétées pendant un niveau : chaque séance enregistrée (matin ou
+// soir) fait avancer la barre. Les doublons d'identifiant ne comptent qu'une fois.
+function seancesFaites(n) {
+  const deb = niveauDebut(n);
+  if (!deb) return 0;
+  const fin = niveauDebut(n + 1);
+  const vus = new Set();
+  (S.wcSeances || []).forEach(x => {
+    if (!x || x.statut !== 'Complété') return;
+    const d = String(x.date).slice(0, 10);
+    if (d < deb || (fin && d >= fin)) return;
+    vus.add(x.id || (d + '|' + x.type + '|' + x.duree));
+  });
+  return vus.size;
+}
+function seancesPrevues(n) { return NIVEAUX[n].semaines * SEANCES_PAR_SEM; }
+
+function critereCoche(n) { return !!pyramideLire('wct_criteres', {})[n]; }
+function toggleCritere(n, v) {
+  const c = pyramideLire('wct_criteres', {});
+  c[n] = !!v;
+  pyramideEcrire('wct_criteres', c);
+  renderPyramide();
+}
+
 function renderPyramide() {
   const el = document.getElementById('pyramide-wrap');
   if (!el) return;
   const act = niveauActif();
   const sem = pyramideSemaine();
   const semTxt = sem === 0 ? 'Départ le lundi 9 novembre' : (sem > 29 ? 'Après la date prévue' : 'Semaine ' + sem + ' sur 29');
+  const larg = [100, 93, 86, 78, 70, 62];
   let h = '<div style="font-size:12px;color:var(--txt2);margin-bottom:10px">' + semTxt +
-          ' · West Coast Trail provisoire le 1er juin 2027 · sac cible 30 à 45 lb</div>';
+          ' · WCT provisoire le 1er juin 2027 · sac cible 30 à 45 lb</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:5px">' +
+          '<div style="width:50%;text-align:center;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;font-weight:600">' +
+          'West Coast Trail<div style="font-size:11px;color:var(--txt2);font-weight:400">1er juin 2027</div></div>';
   NIVEAUX.slice().reverse().forEach(nv => {
     const actif = nv.n === act;
-    h += '<div style="border:1px solid ' + (actif ? 'var(--accent)' : 'var(--border)') +
-         ';border-radius:8px;padding:8px 10px;margin-bottom:6px;' +
-         (actif ? 'background:rgba(255,255,255,0.04)' : '') + '">' +
-         '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600">' +
-         '<span>Niveau ' + nv.n + ' — ' + nv.nom + '</span>' +
-         '<span style="color:var(--txt2);font-weight:400">' + nv.dates + '</span></div>' +
-         '<div style="font-size:11px;color:var(--txt2);margin-top:3px">Charge : ' + nv.charge + '</div>' +
-         '<div style="font-size:11px;color:var(--txt3);margin-top:2px">Pour monter : ' + nv.critere + '</div>' +
-         (actif ? '<div style="font-size:11px;color:var(--accent);margin-top:3px">● Niveau actuel' +
-                  (nv.construit ? '' : ' — semaine type à construire, programme complet affiché') + '</div>' : '') +
-         '</div>';
+    const faits = seancesFaites(nv.n), prevu = seancesPrevues(nv.n);
+    const pct = Math.min(100, Math.round(100 * faits / prevu));
+    const verrou = nv.n > act && !niveauDebut(nv.n);
+    h += '<div style="width:' + larg[nv.n] + '%;box-sizing:border-box;border:1px solid ' + (actif ? 'var(--accent)' : 'var(--border)') +
+         ';border-radius:8px;padding:7px 10px;' + (verrou ? 'opacity:.55;' : '') + '">' +
+         '<div style="display:flex;justify-content:space-between;gap:6px;font-size:12px;font-weight:600">' +
+         '<span>' + (critereCoche(nv.n) ? '✓ ' : '') + 'N' + nv.n + ' · ' + nv.nom + '</span>' +
+         '<span style="font-weight:400;color:var(--txt2)">' + faits + ' / ' + prevu + '</span></div>' +
+         '<div style="height:6px;border-radius:3px;background:var(--border);margin-top:5px;overflow:hidden">' +
+         '<div style="height:100%;width:' + pct + '%;background:' + (actif ? 'var(--accent)' : 'var(--txt3)') + '"></div></div>' +
+         '<div style="font-size:10px;color:var(--txt3);margin-top:3px">' + nv.dates + ' · ' + nv.charge + '</div></div>';
   });
-  h += '<div style="display:flex;gap:8px;margin-top:8px">' +
+  h += '</div>';
+  const nv = NIVEAUX[act];
+  const faitsA = seancesFaites(act), prevuA = seancesPrevues(act);
+  h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">' +
+       '<div style="font-size:12px;color:var(--txt2);margin-bottom:6px">Niveau ' + act + ' — ' + nv.nom + ' : ' + faitsA + ' séance' + (faitsA > 1 ? 's' : '') + ' sur ' + prevuA + '</div>' +
+       '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:10px">' +
+       '<input type="checkbox" ' + (critereCoche(act) ? 'checked' : '') + ' onchange="toggleCritere(' + act + ', this.checked)" style="margin-top:3px">' +
+       '<span>Critère atteint : ' + nv.critere + '</span></label>' +
+       '<div style="display:flex;gap:8px">' +
        '<button class="btn2 btn-sm" style="flex:1" ' + (act <= 0 ? 'disabled' : '') + ' onclick="setNiveau(' + (act - 1) + ')">− Niveau précédent</button>' +
-       '<button class="btn2 btn-sm" style="flex:1;border-color:var(--accent);color:var(--accent)" ' + (act >= 5 ? 'disabled' : '') + ' onclick="confirmerNiveauSuivant()">Niveau suivant +</button></div>';
+       '<button class="btn2 btn-sm" style="flex:1;border-color:var(--accent);color:var(--accent)" ' + (act >= 5 ? 'disabled' : '') + ' onclick="confirmerNiveauSuivant()">Niveau suivant +</button></div></div>';
   el.innerHTML = h;
 }
 function confirmerNiveauSuivant() {
   const act = niveauActif();
-  const nv = NIVEAUX[act];
-  if (confirm('Critère du niveau ' + act + ' atteint ?\n\n' + nv.critere + '\n\nPasser au niveau ' + (act + 1) + ' ?')) setNiveau(act + 1);
+  if (!critereCoche(act)) { toast('Coche d\'abord le critère du niveau ' + act + ' une fois atteint.'); return; }
+  const faits = seancesFaites(act), prevu = seancesPrevues(act);
+  const avert = faits < 0.8 * prevu ? '\n\nAttention : seulement ' + faits + ' séances sur ' + prevu + ' faites.' : '';
+  if (confirm('Passer au niveau ' + (act + 1) + ' ?' + avert)) setNiveau(act + 1);
 }
 
 // Liste pour le journal de fin de séance, dérivée de la table elle-même.
