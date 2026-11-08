@@ -366,6 +366,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="prog-header"><span class="prog-label" id="prog-jour-label">Aujourd'hui</span><span class="prog-pct" id="pct-jour">0%</span></div>
     <div class="prog-bar"><div class="prog-fill" id="bar-jour" style="width:0%"></div></div>
   </div>
+  <div id="sobre-card"></div>
   <div id="hab-list"><p class="empty">Rien de planifié.<br>Clique "+ Planifier" pour ajouter.</p></div>
   <p class="slabel">Répartition du temps</p>
   <div class="card">
@@ -1610,6 +1611,7 @@ function renderDayView() {
   renderHabList(isPast);
   renderProgress();
   renderPie();
+  renderSobre();
 }
 
 function todayPlans() {
@@ -2882,17 +2884,17 @@ const PYRAMIDE_CLE = 'wct_niveau';
 // Séances prévues par semaine (semaine type du niveau 0 : 9). Total d'un niveau = semaines × ce nombre.
 const SEANCES_PAR_SEM = 9;
 const NIVEAUX = [
-  { n:0, semaines:2, nom:'Reprise',          sem:'1-2',   dates:'9-22 nov',    charge:'aucune',
+  { n:0, sobre:2, semaines:2, nom:'Reprise',          sem:'1-2',   dates:'9-22 nov',    charge:'aucune',
     critere:'5 séances par semaine pendant 2 semaines, douleur ≤ 3/10', construit:true },
-  { n:1, semaines:4, nom:'Base aérobie',     sem:'3-6',   dates:'23 nov-20 déc', charge:'aucune',
+  { n:1, sobre:3, semaines:4, nom:'Base aérobie',     sem:'3-6',   dates:'23 nov-20 déc', charge:'aucune',
     critere:'Zone 2 de 45 min en continu, rando de 8 km à RPE ≤ 5' },
-  { n:2, semaines:6, nom:'Charge',           sem:'7-12',  dates:'21 déc-31 jan', charge:'10 → 20 lb',
+  { n:2, sobre:5, semaines:6, nom:'Charge',           sem:'7-12',  dates:'21 déc-31 jan', charge:'10 → 20 lb',
     critere:'12 km avec 20 lb, douleur du lendemain ≤ 3 sur 2 sorties' },
-  { n:3, semaines:7, nom:'Endurance',        sem:'13-19', dates:'1 fév-21 mars', charge:'20 → 30 lb',
+  { n:3, sobre:6, semaines:7, nom:'Endurance',        sem:'13-19', dates:'1 fév-21 mars', charge:'20 → 30 lb',
     critere:'2 jours de suite à 12 km avec 30 lb, récupération correcte' },
-  { n:4, semaines:8, nom:'Spécifique WCT',   sem:'20-27', dates:'22 mars-16 mai', charge:'30 → 45 lb',
+  { n:4, sobre:7, semaines:8, nom:'Spécifique WCT',   sem:'20-27', dates:'22 mars-16 mai', charge:'30 → 45 lb',
     critere:'Week-end de 2 jours à 20 km+ par jour avec la charge cible' },
-  { n:5, semaines:2, nom:'Affûtage',         sem:'28-29', dates:'17-30 mai',    charge:'sac final pesé',
+  { n:5, sobre:7, semaines:2, nom:'Affûtage',         sem:'28-29', dates:'17-30 mai',    charge:'sac final pesé',
     critere:'Cou stable, équipement prêt' },
 ];
 
@@ -3067,7 +3069,7 @@ function renderPyramide() {
   const semTxt = sem === 0 ? 'Départ le lundi 9 novembre' : (sem > 29 ? 'Après la date prévue' : 'Semaine ' + sem + ' sur 29');
   const larg = [100, 93, 86, 78, 70, 62];
   let h = '<div style="font-size:12px;color:var(--txt2);margin-bottom:10px">' + semTxt +
-          ' · WCT provisoire le 1er juin 2027 · sac cible 30 à 45 lb</div>' +
+          ' · WCT provisoire le 1er juin 2027 · sac cible 30 à 45 lb · série sans alcool : ' + serieSobre() + ' j</div>' +
           '<div style="display:flex;flex-direction:column;align-items:center;gap:5px">' +
           '<div style="width:50%;text-align:center;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;font-weight:600">' +
           'West Coast Trail<div style="font-size:11px;color:var(--txt2);font-weight:400">1er juin 2027</div></div>';
@@ -3083,6 +3085,9 @@ function renderPyramide() {
          '<span style="font-weight:400;color:var(--txt2)">' + faits + ' / ' + prevu + '</span></div>' +
          '<div style="height:6px;border-radius:3px;background:var(--border);margin-top:5px;overflow:hidden">' +
          '<div style="height:100%;width:' + pct + '%;background:' + (actif ? 'var(--accent)' : 'var(--txt3)') + '"></div></div>' +
+         '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-top:4px"><span>Sans alcool</span><span>' + sobrieteFaits(nv.n) + ' / ' + sobrietePrevus(nv.n) + '</span></div>' +
+         '<div style="height:4px;border-radius:2px;background:var(--border);margin-top:2px;overflow:hidden">' +
+         '<div style="height:100%;width:' + Math.min(100, Math.round(100 * sobrieteFaits(nv.n) / sobrietePrevus(nv.n))) + '%;background:var(--amber)"></div></div>' +
          '<div style="font-size:10px;color:var(--txt3);margin-top:3px">' + nv.dates + ' · ' + nv.charge + '</div></div>';
   });
   h += '</div>';
@@ -3092,12 +3097,96 @@ function renderPyramide() {
        '<div style="font-size:12px;color:var(--txt2);margin-bottom:6px">Niveau ' + act + ' — ' + nv.nom + ' : ' + faitsA + ' séance' + (faitsA > 1 ? 's' : '') + ' sur ' + prevuA + '</div>' +
        '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:10px">' +
        '<input type="checkbox" ' + (critereCoche(act) ? 'checked' : '') + ' onchange="toggleCritere(' + act + ', this.checked)" style="margin-top:3px">' +
-       '<span>Critère atteint : ' + nv.critere + '</span></label>' +
+       '<span>Critère atteint : ' + nv.critere + ' · alcool : ' + nv.sobre + ' jour' + (nv.sobre > 1 ? 's' : '') + ' sans alcool par semaine</span></label>' +
        '<div style="display:flex;gap:8px">' +
        '<button class="btn2 btn-sm" style="flex:1" ' + (act <= 0 ? 'disabled' : '') + ' onclick="setNiveau(' + (act - 1) + ')">− Niveau précédent</button>' +
        '<button class="btn2 btn-sm" style="flex:1;border-color:var(--accent);color:var(--accent)" ' + (act >= 5 ? 'disabled' : '') + ' onclick="confirmerNiveauSuivant()">Niveau suivant +</button></div></div>';
   el.innerHTML = h;
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  JOURS SANS ALCOOL — objectif progressif vers zéro, par niveau
+//  NIVEAUX[n].sobre = jours sans alcool visés par semaine :
+//  2 → 3 → 5 → 6 → 7 → 7 (zéro alcool dès le niveau 4).
+//  Un jour compte seulement si tu le confirmes ET qu'aucun alcool
+//  n'est noté au journal ce jour-là. Un écart remet la série à zéro,
+//  jamais la barre du niveau.
+// ═══════════════════════════════════════════════════════════════════
+const SOBRE_HAB_ID = 'sobre-jour';
+const MOTS_ALCOOL = ['bière', 'biere', 'vin', 'alcool', 'cidre', 'fort', 'scotch', 'whisky', 'vodka', 'rhum', 'gin', 'cocktail'];
+
+function joursAlcoolJournal() {
+  const set = new Set();
+  (S.journalEntries || []).forEach(e => {
+    const meds = Array.isArray(e.medications) ? e.medications : [];
+    if (meds.some(m => { const n = String((m && m.name) || m || '').toLowerCase();
+                         return MOTS_ALCOOL.some(w => n === w || n.indexOf(w) === 0); })) {
+      set.add(String(e.date).slice(0, 10));
+    }
+  });
+  return set;
+}
+function joursSobres() {
+  const alc = joursAlcoolJournal();
+  const set = new Set();
+  (S.sessions || []).forEach(x => {
+    if (String(x.habitude_id) === SOBRE_HAB_ID) {
+      const d = String(x.date).slice(0, 10);
+      if (!alc.has(d)) set.add(d);
+    }
+  });
+  return set;
+}
+function sobrieteFaits(n) {
+  const deb = niveauDebut(n);
+  if (!deb) return 0;
+  const fin = niveauDebut(n + 1);
+  let c = 0;
+  joursSobres().forEach(d => { if (d >= deb && (!fin || d < fin)) c++; });
+  return c;
+}
+function sobrietePrevus(n) { return NIVEAUX[n].sobre * NIVEAUX[n].semaines; }
+function serieSobre() {
+  const set = joursSobres();
+  const d = new Date(S.todayStr + 'T12:00:00');
+  if (!set.has(S.todayStr)) d.setDate(d.getDate() - 1);
+  let c = 0;
+  while (set.has(localDateStr(d))) { c++; d.setDate(d.getDate() - 1); }
+  return c;
+}
+
+async function marquerSobre() {
+  const jour = S.selectedDay;
+  if (jour > S.todayStr) return;
+  if (joursSobres().has(jour) || joursAlcoolJournal().has(jour)) return;
+  const session = { id: Date.now(), date: jour, habitude_id: SOBRE_HAB_ID,
+                    habitude_nom: 'Jour sans alcool', duree_minutes: 0, note: 'Sobre' };
+  S.sessions.push(session); saveCache();
+  renderSobre();
+  try { await api({ action:'saveSession', session: JSON.stringify(session) }); toast('Jour sans alcool ✓'); }
+  catch (e) { toast('Sauvegardé localement'); }
+  renderPyramide();
+}
+
+function renderSobre() {
+  const el = document.getElementById('sobre-card');
+  if (!el) return;
+  const jour = S.selectedDay;
+  if (jour > S.todayStr) { el.innerHTML = ''; return; }
+  const fait = joursSobres().has(jour);
+  const bu = joursAlcoolJournal().has(jour);
+  const act = niveauActif();
+  const serie = serieSobre();
+  let btn;
+  if (fait) btn = '<div style="color:var(--accent);font-size:13px;font-weight:600">✓ Jour sans alcool</div>';
+  else if (bu) btn = '<div style="color:var(--txt2);font-size:13px">Alcool noté au journal ce jour-là</div>';
+  else btn = '<button class="btn2 btn-sm" style="border-color:var(--accent);color:var(--accent)" onclick="marquerSobre()">Confirmer : jour sans alcool</button>';
+  el.innerHTML = '<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+    '<div><div style="font-size:13px;font-weight:600">Jours sans alcool</div>' +
+    '<div style="font-size:11px;color:var(--txt2);margin-top:2px">Série : ' + serie + ' jour' + (serie > 1 ? 's' : '') +
+    ' · Niveau ' + act + ' : ' + sobrieteFaits(act) + ' / ' + sobrietePrevus(act) + '</div></div>' + btn + '</div></div>';
+}
+
 function confirmerNiveauSuivant() {
   const act = niveauActif();
   if (!critereCoche(act)) { toast('Coche d\'abord le critère du niveau ' + act + ' une fois atteint.'); return; }
