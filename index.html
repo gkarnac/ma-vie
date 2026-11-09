@@ -2892,6 +2892,7 @@ const TYPES_SEANCE = [
 //  encore le programme complet ci-dessus (SEANCES) en attendant d'être
 //  construits un à un, quand le critère du niveau précédent est atteint.
 // ═══════════════════════════════════════════════════════════════════
+const APP_VERSION = '9 nov. 18 h 50';
 const PYRAMIDE_DEBUT = '2026-11-09';
 const PYRAMIDE_CLE = 'wct_niveau';
 // Séances prévues par semaine (semaine type du niveau 0 : 9). Total d'un niveau = semaines × ce nombre.
@@ -3122,6 +3123,7 @@ function renderPyramide() {
        '<div style="display:flex;gap:8px">' +
        '<button class="btn2 btn-sm" style="flex:1" ' + (act <= 0 ? 'disabled' : '') + ' onclick="setNiveau(' + (act - 1) + ')">− Niveau précédent</button>' +
        '<button class="btn2 btn-sm" style="flex:1;border-color:var(--accent);color:var(--accent)" ' + (act >= 5 ? 'disabled' : '') + ' onclick="confirmerNiveauSuivant()">Niveau suivant +</button></div></div>';
+  h += '<div style="font-size:10px;color:var(--txt3);text-align:right;margin-top:8px">version ' + APP_VERSION + ' · ' + (S.wcSeances || []).length + ' séances lues</div>';
   el.innerHTML = h;
 }
 
