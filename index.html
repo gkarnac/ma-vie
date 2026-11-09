@@ -1299,7 +1299,7 @@ function loadCache() {
     S.habitudes = d.habitudes || [];
     S.plans = d.plans || [];
     S.sessions = d.sessions || [];
-    S.wcSeances = d.wcSeances || [];
+    S.wcSeances = normSeances(d.wcSeances);
     S.wcFormes = (d.wcFormes && d.wcFormes.length) ? d.wcFormes : [...DEFAULT_WC_FORMES];
     S.wcPractices = parseWcPractices(d.wcPractices || []);
     S.exercices = d.exercices || [];
@@ -1323,7 +1323,7 @@ async function syncAll() {
     S.habitudes = parseHabitudes(data.habitudes || []);
     S.plans = parsePlans(data.planification || []);
     S.sessions = data.sessions || [];
-    S.wcSeances = data.wcSeances || [];
+    S.wcSeances = normSeances(data.wcSeances);
     S.wcPractices = parseWcPractices(data.wcPractices || []);
     S.wcFormes = parseWcFormes(data.wcFormes || []);
     // Garantir que les formes par défaut existent toujours dans le Sheet.
@@ -1478,6 +1478,15 @@ function parsePlans(rows) {
     duree_reelle: parseFloat(p.duree_reelle) || 0,
     complete: p.complete === true || p.complete === 'true' || p.complete === 'TRUE'
   }));
+}
+
+// Les séances modifiées par un simple basculement (coche) revenaient du Sheet avec la
+// date entre guillemets (« "2026-11-09T05:00:00.000Z" »), donc introuvables par date.
+// On retire les guillemets à la lecture et on ignore les lignes marquées « Doublon ».
+function normSeances(liste) {
+  return (liste || [])
+    .map(x => { if (x && typeof x.date === 'string') x.date = x.date.replace(/^"+|"+$/g, ''); return x; })
+    .filter(x => x && x.statut !== 'Doublon');
 }
 
 function renderAll() {
@@ -1913,7 +1922,10 @@ async function markWcDone(seanceId, isDone) {
   renderHabList(S.selectedDay < S.todayStr);
   renderWeekNav();
   try {
-    await api({action:'saveWcSeance', data: JSON.stringify({id: seanceId, statut: seance.statut})});
+    await api({action:'saveWcSeance', data: JSON.stringify({
+      id: seanceId, date: String(seance.date || '').slice(0, 10), type: seance.type || '',
+      statut: seance.statut, duree: seance.duree || ''
+    })});
   } catch(e) {}
 }
 
