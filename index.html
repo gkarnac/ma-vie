@@ -1489,6 +1489,7 @@ function renderAll() {
   renderAnalyse();
   renderParamHab();
   renderParamMed();
+  try { renderPyramide(); } catch (e) {}
 }
 
 function goPage(id, btn) {
@@ -3042,12 +3043,20 @@ function seancesFaites(n) {
   const deb = niveauDebut(n);
   if (!deb) return 0;
   const fin = niveauDebut(n + 1);
-  const vus = new Set();
+  const vus = new Map();   // identifiant → horodatage (ms) lu dans l'identifiant « S<ms> »
+  const gardes = [];       // séances retenues : { cle, t }
   (S.wcSeances || []).forEach(x => {
     if (!x || x.statut !== 'Complété') return;
     const d = String(x.date).slice(0, 10);
     if (d < deb || (fin && d >= fin)) return;
-    vus.add(x.id || (d + '|' + x.type + '|' + x.duree));
+    const id = x.id || (d + '|' + x.type + '|' + x.duree);
+    if (vus.has(id)) return;
+    const t = parseInt(String(x.id || '').replace(/\D/g, ''), 10) || 0;
+    const cle = d + '|' + x.type + '|' + x.duree;
+    // même jour, même type, même durée, enregistrées à moins de 5 min d'écart : doublon
+    if (t && gardes.some(g => g.cle === cle && g.t && Math.abs(g.t - t) < 300000)) return;
+    vus.set(id, t);
+    gardes.push({ cle, t });
   });
   return vus.size;
 }
@@ -3613,6 +3622,8 @@ async function saveSeanceComplete() {
   if (S.seanceDayIdx === null) { toast('Choisis d\'abord un jour.'); return; }
   const w = effectiveWeekly()[S.seanceDayIdx];
   const typeReel = typeDuJour(S.seanceDayIdx);
+  if (Date.now() - (S._derniereSauvSeance || 0) < 5000) return;   // double-appui
+  S._derniereSauvSeance = Date.now();
   const seanceId = 'S' + Date.now();
   const rows = document.querySelectorAll('#ex-log-card .ex-log-row');
   const log = [];
@@ -3640,6 +3651,7 @@ async function saveSeanceComplete() {
   };
   S.wcSeances.push(seance);
   saveCache();
+  try { renderPyramide(); renderSobre(); } catch (e) {}
   try { await api({action:'saveWcSeance', data: JSON.stringify(seance)}); } catch(e) {}
   toast('Séance enregistrée ✓');
   // Libérer les MP3 en mémoire
