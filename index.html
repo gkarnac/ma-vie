@@ -3160,8 +3160,10 @@ function joursSobres() {
   });
   return set;
 }
+// Le suivi sans alcool a commencé avant le niveau 0 : les jours confirmés dès le 7 nov. comptent.
+const SOBRE_DEBUT = '2026-11-07';
 function sobrieteFaits(n) {
-  const deb = niveauDebut(n);
+  const deb = n === 0 ? SOBRE_DEBUT : niveauDebut(n);
   if (!deb) return 0;
   const fin = niveauDebut(n + 1);
   let c = 0;
