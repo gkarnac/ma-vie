@@ -342,14 +342,7 @@ textarea{resize:vertical;min-height:68px}
 
 <!-- PAGE SEMAINE -->
 <div id="page-aujourd-hui" class="page active">
-  <div class="prog-wrap" style="margin-bottom:12px">
-    <div class="prog-header">
-      <span class="prog-label">Semaine</span>
-      <span style="font-size:12px;color:var(--txt2)" id="week-label">Cette semaine</span>
-      <span class="prog-pct" id="pct-sem">0%</span>
-    </div>
-    <div class="prog-bar"><div class="prog-fill amber" id="bar-sem" style="width:0%"></div></div>
-  </div>
+  <div class="card" id="pyramide-wrap" style="margin-bottom:12px"></div>
   <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
     <button onclick="changeWeek(-1)" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--txt2);font-size:18px;cursor:pointer;padding:4px 10px;line-height:1">‹</button>
     <div class="week-nav" id="week-nav" style="flex:1;margin-bottom:0"></div>
@@ -615,8 +608,6 @@ textarea{resize:vertical;min-height:68px}
     <input type="text" id="new-med-dose" placeholder="Dose" style="width:90px">
     <button class="btn2 btn-sm" onclick="addMedParam()">+</button>
   </div>
-  <p class="slabel">Pyramide WCT — retour à l'entraînement</p>
-  <div class="card" id="pyramide-wrap"></div>
   <p class="slabel">Programme d'entraînement</p>
   <div class="card">
     <div id="weekly-override-status" style="font-size:12px;color:var(--txt2);margin-bottom:10px">—</div>
@@ -1566,7 +1557,7 @@ function updateWeekLabel() {
     : S.weekOffset === 1 ? 'Semaine prochaine'
     : S.weekOffset === -1 ? 'Semaine dernière'
     : first.toLocaleDateString('fr-CA', opts) + ' – ' + last.toLocaleDateString('fr-CA', opts);
-  document.getElementById('week-label').textContent = label;
+  const wl = document.getElementById('week-label'); if (wl) wl.textContent = label;
 }
 
 function getMonday(d) {
@@ -2124,8 +2115,9 @@ function renderProgress() {
   const wFait = wp.reduce((a,p) => a + p.duree_reelle, 0)
               + wwc.filter(s => s.statut === 'Complété').reduce((a,s) => a + wcDuree(s), 0);
   const pS = wPrev > 0 ? Math.min(100, Math.round(wFait / wPrev * 100)) : 0;
-  document.getElementById('pct-sem').textContent = pS + '%';
-  document.getElementById('bar-sem').style.width = pS + '%';
+  const ps = document.getElementById('pct-sem'), bs = document.getElementById('bar-sem');
+  if (ps) ps.textContent = pS + '%';
+  if (bs) bs.style.width = pS + '%';
 }
 
 // Les 3 piliers du pie chart et leurs couleurs fixes
@@ -2892,7 +2884,7 @@ const TYPES_SEANCE = [
 //  encore le programme complet ci-dessus (SEANCES) en attendant d'être
 //  construits un à un, quand le critère du niveau précédent est atteint.
 // ═══════════════════════════════════════════════════════════════════
-const APP_VERSION = '9 nov. 18 h 50';
+const APP_VERSION = '10 nov. 18 h 30';
 const PYRAMIDE_DEBUT = '2026-11-09';
 const PYRAMIDE_CLE = 'wct_niveau';
 // Séances prévues par semaine (semaine type du niveau 0 : 9). Total d'un niveau = semaines × ce nombre.
