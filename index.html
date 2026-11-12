@@ -2490,7 +2490,7 @@ async function savePostTimer() {
 
 // ── ANALYSE ────────────────────────────────────────────────────
 function renderAnalyse() {
-  const entries = [...S.journalEntries].sort((a,b) => a.date.localeCompare(b.date));
+  const entries = [...S.journalEntries].filter(e => e.source !== 'vesper-alcool').sort((a,b) => a.date.localeCompare(b.date));
   const sg = document.getElementById('a-stats');
   if (!entries.length) {
     sg.innerHTML = '<p class="empty" style="grid-column:1/-1">Aucune donnée.</p>';
@@ -2884,7 +2884,7 @@ const TYPES_SEANCE = [
 //  encore le programme complet ci-dessus (SEANCES) en attendant d'être
 //  construits un à un, quand le critère du niveau précédent est atteint.
 // ═══════════════════════════════════════════════════════════════════
-const APP_VERSION = '10 nov. 18 h 30';
+const APP_VERSION = '12 nov. 18 h 40';
 const PYRAMIDE_DEBUT = '2026-11-09';
 const PYRAMIDE_CLE = 'wct_niveau';
 // Séances prévues par semaine (semaine type du niveau 0 : 9). Total d'un niveau = semaines × ce nombre.
